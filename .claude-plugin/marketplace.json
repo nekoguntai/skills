@@ -1,0 +1,15 @@
+{
+  "name": "nekoguntai-skills",
+  "description": "Personal collection of Claude Code plugins.",
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "grade",
+      "source": "grade",
+      "version": "1.0.0",
+      "description": "Strict, evidence-driven software quality audit. Multi-domain scoring anchored to ISO/IEC 25010 (McCabe, NIST, SonarQube, OWASP). Full + diff modes, trend tracking, multi-language."
+    }
+  ]
+}

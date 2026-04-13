@@ -1,0 +1,10 @@
+{
+  "name": "grade",
+  "description": "Strict, evidence-driven software quality audit for any repository. Multi-domain scoring anchored to ISO/IEC 25010, McCabe, NIST, SonarQube, and OWASP. Supports full and diff modes, trend tracking across runs, and multi-language projects (Node, Python, Go, Rust, Java, Kotlin, Ruby, PHP, Elixir, Swift, .NET, Scala).",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}
