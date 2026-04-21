@@ -1,13 +1,17 @@
 {
   "name": "nekoguntai-skills",
-  "description": "Personal collection of Claude Code plugins.",
+  "owner": {
+    "name": "nekoguntai",
+    "email": "253817213+nekoguntai@users.noreply.github.com"
+  },
   "metadata": {
-    "pluginRoot": "./plugins"
+    "pluginRoot": "./plugins",
+    "description": "Personal collection of Claude Code plugins."
   },
   "plugins": [
     {
       "name": "grade",
-      "source": "grade",
+      "source": "./plugins/grade",
       "version": "1.0.0",
       "description": "Strict, evidence-driven software quality audit. Multi-domain scoring anchored to ISO/IEC 25010 (McCabe, NIST, SonarQube, OWASP). Full + diff modes, trend tracking, multi-language."
     }
