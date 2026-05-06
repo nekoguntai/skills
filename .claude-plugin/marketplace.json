@@ -14,6 +14,12 @@
       "source": "./plugins/grade",
       "version": "1.0.0",
       "description": "Strict, evidence-driven software quality audit. Multi-domain scoring anchored to ISO/IEC 25010 (McCabe, NIST, SonarQube, OWASP). Full + diff modes, trend tracking, multi-language."
+    },
+    {
+      "name": "pr-delivery",
+      "source": "./plugins/pr-delivery",
+      "version": "1.0.0",
+      "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, verification, and cleanup."
     }
   ]
 }

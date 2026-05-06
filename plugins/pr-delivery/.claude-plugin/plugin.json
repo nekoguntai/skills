@@ -1,0 +1,10 @@
+{
+  "name": "pr-delivery",
+  "description": "End-to-end pull request delivery workflow for committing local changes, pushing a branch, opening a PR, monitoring CI and reviews, merging safely, and cleaning up afterward.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

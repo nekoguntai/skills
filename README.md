@@ -19,6 +19,7 @@ Where `<plugin-name>` is one of the plugins listed below.
 | Plugin | Skills | Description |
 |---|---|---|
 | [`grade`](plugins/grade) | `/grade:grade`, `/grade:grade-history` | Strict, evidence-driven software quality audit anchored to ISO/IEC 25010. Multi-domain scoring, full + diff modes, trend tracking, multi-language. |
+| [`pr-delivery`](plugins/pr-delivery) | `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, verification, and cleanup. |
 
 <!-- Add new plugins here as rows. Each plugin needs:
      1. Its own directory under plugins/
