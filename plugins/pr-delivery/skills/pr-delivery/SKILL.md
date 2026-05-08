@@ -101,21 +101,33 @@ Use this skill to take a branch from local changes to a merged PR with verified 
 
    **Verify completion (both modes):**
 
-   The platform reporting `merged: true` is NOT proof. The only signal correlated with the merge actually happening is the merge commit appearing in the target branch's ancestry. Use `git merge-base --is-ancestor` against the head SHA — it cannot false-positive the way a substring grep against `git log` can.
+   The platform reporting `merged: true` is NOT proof. The only signal correlated with the merge actually happening is the **merge commit** appearing in the target branch's ancestry — the `merge_commit_sha` the platform reports, NOT the PR's head SHA.
+
+   This distinction matters because squash merges (Sanctuary's default, and the default for many GitHub repos) produce a NEW commit on main with a fresh SHA — the PR's head SHA never lands on main, only the squashed commit does. Checking `is-ancestor <head-sha> origin/main` would false-negative every squash merge. Always verify against the merge commit SHA:
 
    ```bash
-   # GitHub:
-   gh pr view <num> --json state,mergedAt,mergeCommit -q '"state=" + .state + " mergedAt=" + (.mergedAt // "null")'
-   git -C <repo> fetch origin main
-   git -C <repo> merge-base --is-ancestor <pr-head-sha> origin/main && echo MERGED || echo NOT-IN-MAIN
-
-   # Forgejo:
-   curl -fsS -H "Authorization: token $FORGEJO_TOKEN" \
+   # 1. Get the merge_commit_sha the platform claims.
+   #    GitHub:
+   MERGE_SHA=$(gh pr view <num> --json mergeCommit -q '.mergeCommit.oid // ""')
+   #    Forgejo:
+   MERGE_SHA=$(curl -fsS -H "Authorization: token $FORGEJO_TOKEN" \
      "$FORGEJO_URL/api/v1/repos/$OWNER/$REPO/pulls/<num>" \
-     | jq '{state, merged, merge_commit_sha}'
+     | jq -r '.merge_commit_sha // ""')
+
+   # 2. Pull main and check the claimed merge commit actually landed.
    git -C <repo> fetch origin main
-   git -C <repo> merge-base --is-ancestor <pr-head-sha> origin/main && echo MERGED || echo NOT-IN-MAIN
+   if [ -z "$MERGE_SHA" ]; then
+     echo "NOT-MERGED: platform reports no merge_commit_sha"
+   elif ! git -C <repo> cat-file -e "$MERGE_SHA" 2>/dev/null; then
+     echo "GHOST-MERGE: claimed $MERGE_SHA does not exist as a git object"
+   elif git -C <repo> merge-base --is-ancestor "$MERGE_SHA" origin/main; then
+     echo "MERGED at $MERGE_SHA"
+   else
+     echo "NOT-IN-MAIN: $MERGE_SHA exists but is not on origin/main"
+   fi
    ```
+
+   The three failure modes — empty SHA, fabricated SHA, real SHA on a different branch — each indicate a distinct platform bug. The MERGED branch is the only one that justifies cleanup.
 
    ### Common pitfalls
 
@@ -125,7 +137,7 @@ Use this skill to take a branch from local changes to a merged PR with verified 
    - **`mergeStateStatus: BLOCKED` is normal** during CI runs (just waiting on required checks). It only indicates a real failure when paired with FAILURE checks; verify with `gh pr checks <num> | grep -E 'fail|FAIL'`.
    - **`gh-readonly-queue/main/pr-<num>-<sha>` branches** are the merge queue's test branches — failures there mean the PR's checks fail when run against the latest main, not when run on the PR's own commit. Investigate the queue branch's runs, not the PR's runs, to debug queue rejections.
    - **`autoMergeRequest: null` does not mean "not queued"** in merge-queue repos. The merge queue tracks PRs separately from auto-merge. Verify queue membership with the GraphQL API: `gh api graphql -f query='query { repository(owner: "<owner>", name: "<repo>") { mergeQueue { entries(first: 10) { nodes { pullRequest { number } position state estimatedTimeToMerge } } } } }'`. A PR is genuinely queued when it appears in the entries list with a `state` like `AWAITING_CHECKS` or `MERGEABLE`.
-   - **Forgejo ghost-merge: API claims `merged: true` with a fabricated merge_commit_sha while `main` was never advanced.** Observed when `merge_when_checks_succeed: true` is armed and a required check then fails — Forgejo flips the PR to closed/merged anyway, surfaces a merge_commit_sha that doesn't exist in any tree, and refuses reopens (HTTP 412). Detect with `git merge-base --is-ancestor <pr-head-sha> origin/main` (the verify-completion command above) — exit code 1 means ghost-merge regardless of what the API says. Recovery: the head branch is still there, so push any fix on top and open a fresh PR; don't waste cycles trying to reopen the closed one.
+   - **Forgejo ghost-merge: API claims `merged: true` with a fabricated merge_commit_sha while `main` was never advanced.** Observed when `merge_when_checks_succeed: true` is armed and a required check then fails — Forgejo flips the PR to closed/merged anyway, surfaces a merge_commit_sha that doesn't exist in any tree, and refuses reopens (HTTP 412). Detect with the verify-completion command above: `git cat-file -e $MERGE_SHA` returns non-zero (the SHA is fabricated and isn't a real git object). Recovery: the head branch is still there, so push any fix on top and open a fresh PR; don't waste cycles trying to reopen the closed one.
 
 7. Verify post-merge state.
    - Fetch `origin`.
