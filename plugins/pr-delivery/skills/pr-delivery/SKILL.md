@@ -101,9 +101,20 @@ Use this skill to take a branch from local changes to a merged PR with verified 
 
    **Verify completion (both modes):**
 
+   The platform reporting `merged: true` is NOT proof. The only signal correlated with the merge actually happening is the merge commit appearing in the target branch's ancestry. Use `git merge-base --is-ancestor` against the head SHA — it cannot false-positive the way a substring grep against `git log` can.
+
    ```bash
+   # GitHub:
    gh pr view <num> --json state,mergedAt,mergeCommit -q '"state=" + .state + " mergedAt=" + (.mergedAt // "null")'
-   git -C <repo> fetch origin main && git -C <repo> log origin/main --oneline | grep -F "$(gh pr view <num> --json mergeCommit -q '.mergeCommit.oid // ""' | cut -c1-7)"
+   git -C <repo> fetch origin main
+   git -C <repo> merge-base --is-ancestor <pr-head-sha> origin/main && echo MERGED || echo NOT-IN-MAIN
+
+   # Forgejo:
+   curl -fsS -H "Authorization: token $FORGEJO_TOKEN" \
+     "$FORGEJO_URL/api/v1/repos/$OWNER/$REPO/pulls/<num>" \
+     | jq '{state, merged, merge_commit_sha}'
+   git -C <repo> fetch origin main
+   git -C <repo> merge-base --is-ancestor <pr-head-sha> origin/main && echo MERGED || echo NOT-IN-MAIN
    ```
 
    ### Common pitfalls
@@ -114,6 +125,7 @@ Use this skill to take a branch from local changes to a merged PR with verified 
    - **`mergeStateStatus: BLOCKED` is normal** during CI runs (just waiting on required checks). It only indicates a real failure when paired with FAILURE checks; verify with `gh pr checks <num> | grep -E 'fail|FAIL'`.
    - **`gh-readonly-queue/main/pr-<num>-<sha>` branches** are the merge queue's test branches — failures there mean the PR's checks fail when run against the latest main, not when run on the PR's own commit. Investigate the queue branch's runs, not the PR's runs, to debug queue rejections.
    - **`autoMergeRequest: null` does not mean "not queued"** in merge-queue repos. The merge queue tracks PRs separately from auto-merge. Verify queue membership with the GraphQL API: `gh api graphql -f query='query { repository(owner: "<owner>", name: "<repo>") { mergeQueue { entries(first: 10) { nodes { pullRequest { number } position state estimatedTimeToMerge } } } } }'`. A PR is genuinely queued when it appears in the entries list with a `state` like `AWAITING_CHECKS` or `MERGEABLE`.
+   - **Forgejo ghost-merge: API claims `merged: true` with a fabricated merge_commit_sha while `main` was never advanced.** Observed when `merge_when_checks_succeed: true` is armed and a required check then fails — Forgejo flips the PR to closed/merged anyway, surfaces a merge_commit_sha that doesn't exist in any tree, and refuses reopens (HTTP 412). Detect with `git merge-base --is-ancestor <pr-head-sha> origin/main` (the verify-completion command above) — exit code 1 means ghost-merge regardless of what the API says. Recovery: the head branch is still there, so push any fix on top and open a fresh PR; don't waste cycles trying to reopen the closed one.
 
 7. Verify post-merge state.
    - Fetch `origin`.
