@@ -1,0 +1,10 @@
+{
+  "name": "codex-review",
+  "description": "Codex code review closeout helper for local patches, PR branches, and parallel verification.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

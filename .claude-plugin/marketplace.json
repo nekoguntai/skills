@@ -22,6 +22,12 @@
       "description": "Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths."
     },
     {
+      "name": "codex-review",
+      "source": "./plugins/codex-review",
+      "version": "1.0.0",
+      "description": "Codex code review closeout helper for local patches, PR branches, and parallel verification."
+    },
+    {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
       "version": "1.0.0",

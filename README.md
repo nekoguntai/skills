@@ -20,6 +20,7 @@ Where `<plugin-name>` is one of the plugins listed below.
 |---|---|---|
 | [`grade`](plugins/grade) | `/grade:grade`, `/grade:grade-history` | Strict, evidence-driven software quality audit anchored to ISO/IEC 25010. Multi-domain scoring, full + diff modes, divergent-path findings, trend tracking, multi-language. |
 | [`rationalize`](plugins/rationalize) | `/rationalize:rationalize` | Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths. |
+| [`codex-review`](plugins/codex-review) | `/codex-review:codex-review` | Codex code review closeout helper for local patches, PR branches, and parallel verification. |
 | [`pr-delivery`](plugins/pr-delivery) | `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, verification, and cleanup. |
 
 <!-- Add new plugins here as rows. Each plugin needs:
