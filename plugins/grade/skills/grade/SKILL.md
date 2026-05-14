@@ -22,6 +22,7 @@ Your job is to evaluate the entire repository (or a diff against a base ref) and
 5. **Be actionable.** Every low score must tell the user exactly what to fix: specific file, specific threshold missed.
 6. **Work across languages** via multi-language tools, not per-language regex.
 7. **Acknowledge what static analysis can't see.** DORA/SRE metrics need runtime data. Score their *enablers* instead (CI, deploy artifacts, health endpoints), labeled "DORA-readiness".
+8. **Flag divergent paths without turning the audit into a migration plan.** Parallel active implementations of the same workflow or contract are Maintainability evidence. `/grade` reports the risk and recommends rationalization when needed; canonical-path decisions and cleanup sequencing belong in `/rationalize:rationalize`.
 
 ---
 
@@ -35,6 +36,7 @@ Produce a **Software Quality Report** with:
 - Per-domain scores (7 domains, ISO 25010-aligned)
 - Evidence table (mechanical measurements + tool provenance)
 - Judged findings (each citing ISO sub-characteristic + inspection target + justification)
+- Divergent implementation path findings and disposition
 - Trend vs previous run
 - Top risks
 - Fastest improvements
@@ -138,7 +140,7 @@ Each row below is either **[M] Mechanical** (tool-backed threshold → score) or
 | 3.1 | Cyclomatic complexity | **[M]** | `lizard_warning_count` (functions with CCN>15 per McCabe/NIST/SonarQube) | `0`→+5; `1-5`→+3; `6-15`→+1; `>15`→0; `unknown`→+2 (lizard not installed; downgrade confidence) |
 | 3.2 | Duplication | **[M]** | `duplication_pct` (jscpd vs SonarQube 3% default) | `<3%`→+3; `3-5%`→+1; `>5%`→0; `unknown`→+1 (jscpd not installed) |
 | 3.3 | No god files | **[M]** | `largest_file_lines` | `<500`→+2; `500-1000`→+1; `>1000`→0; `unknown`→+1 |
-| 3.4 | Architecture clarity | **[J]** | directory layout; Modularity / Reusability | Inspect top-level layout via Explore. **Low→0** (flat tangled), **Medium→+2** (some structure), **High→+3** (clear separation, no cycles). |
+| 3.4 | Architecture clarity and path convergence | **[J]** | directory layout plus divergent-path scan; Modularity / Reusability / Analyzability | Inspect top-level layout and likely duplicate active paths via Explore. **Low→0** (flat/tangled or high-risk duplicate active paths), **Medium→+2** (some structure or known divergences with guardrails), **High→+3** (clear separation, no cycles, no unjustified parallel implementations). |
 | 3.5 | Readability / naming | **[J]** | spot-check 3-5 random source files; Analyzability | **Low→0** (cryptic, inconsistent), **Medium→+1** (mixed), **High→+2** (consistent, self-documenting). |
 
 ---
@@ -211,6 +213,28 @@ If a signal is `unknown`:
 - For **[J]** rows: if the evidence signal is missing, rely on Explore inspection alone and note lowered confidence
 
 Never regex-substitute for a missing real measurement.
+
+---
+
+# 🧭 DIVERGENT PATH LENS
+
+During judged Maintainability inspection, identify likely divergent paths. This is a detection and risk-reporting pass, not a mandate to merge everything.
+
+Look for:
+
+- duplicate public contracts for the same domain object, endpoint, event, schema, or API response;
+- parallel services, hooks, clients, handlers, adapters, or test fixtures with overlapping workflow names;
+- legacy/current branches, compatibility shims, feature flags, or old/new naming that lack a retirement note;
+- tests that prove similar behavior through separate stacks or helper layers;
+- intentionally separate provider, platform, or boundary adapters that need explicit "keep separate" justification.
+
+Classify each concrete candidate as:
+
+- `justified` - separate paths encode different boundaries, providers, permissions, performance needs, or compatibility contracts;
+- `watch` - duplication exists but current tests, manifests, or narrow ownership keep the risk contained;
+- `rationalize` - active paths can drift, have already drifted, or make future changes likely to land in the wrong place.
+
+For `/grade`, cite only evidence and risk. If the next step requires choosing a canonical path, migration order, delete order, or compatibility policy, recommend `/rationalize:rationalize` instead of embedding a full cleanup plan in the audit.
 
 ---
 
@@ -293,6 +317,13 @@ State the confidence level in the report header and name the specific missing to
 
 ---
 
+## 🧭 Divergent Paths
+| Candidate | Evidence | Disposition | Risk / Next Step |
+|---|---|---|---|
+| <workflow/contract> | <paths> | <justified/watch/rationalize> | <why it matters, or "None found"> |
+
+---
+
 ## 🛠️ Fastest Improvements
 1. <action> — <expected point gain> — <effort estimate>
 2. ...
@@ -324,9 +355,10 @@ Follow this flow in order. Steps marked **[full only]** or **[diff only]** are m
    - For criteria worth ≥4 points, use the `Explore` subagent with a specific inspection target ("look at these 5 files for X pattern"); for <4 point criteria, a quick `Read` is sufficient
    - Pick Low/Medium/High and write a one-sentence justification citing specific paths + the ISO sub-characteristic
    - **Anchor to previous entry**: if evidence signals are within ±10% of the prior run's *and* the mechanical signals haven't materially changed (no new fail/pass transitions, complexity/duplication within 1% band), inherit the prior judged scores unless you have specific new evidence. State "inherited from prev" in the justification.
-10. **Check hard-fail gates**. If triggered, cap at D (≤69) and list blockers first, each citing the signal value.
-11. **Append history entry** (see TREND TRACKING).
-12. **Emit the report** per OUTPUT FORMAT. Every score must be traceable to either a tool output (for [M]) or an inspection with file paths + ISO citation (for [J]).
+10. **Run the divergent-path lens** as part of Maintainability judgment and include a Divergent Paths section, even if it says "None found."
+11. **Check hard-fail gates**. If triggered, cap at D (≤69) and list blockers first, each citing the signal value.
+12. **Append history entry** (see TREND TRACKING).
+13. **Emit the report** per OUTPUT FORMAT. Every score must be traceable to either a tool output (for [M]) or an inspection with file paths + ISO citation (for [J]).
 
 ---
 
@@ -377,6 +409,8 @@ Grades **only files changed between `HEAD` and the base ref**.
 ## Heuristic constraints in diff mode
 
 All [J] inspection via Explore must be **scoped to the changed files only**. Pass the file list explicitly. A reliability issue in an untouched file is not relevant to grading this diff.
+
+For divergent-path findings in diff mode, cite unchanged canonical paths only when needed to prove the changed file duplicates or forks them. Score and recommend only against the changed surface.
 
 ## Empty diff
 

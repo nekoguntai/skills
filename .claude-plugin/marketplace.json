@@ -12,8 +12,14 @@
     {
       "name": "grade",
       "source": "./plugins/grade",
+      "version": "1.1.0",
+      "description": "Strict, evidence-driven software quality audit. Multi-domain scoring anchored to ISO/IEC 25010 (McCabe, NIST, SonarQube, OWASP). Full + diff modes, trend tracking, divergent-path findings, multi-language."
+    },
+    {
+      "name": "rationalize",
+      "source": "./plugins/rationalize",
       "version": "1.0.0",
-      "description": "Strict, evidence-driven software quality audit. Multi-domain scoring anchored to ISO/IEC 25010 (McCabe, NIST, SonarQube, OWASP). Full + diff modes, trend tracking, multi-language."
+      "description": "Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths."
     },
     {
       "name": "pr-delivery",

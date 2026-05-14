@@ -21,6 +21,7 @@ The core principles:
 4. **Cite everything.** Every score cites either `tool + threshold + exit status` or `ISO sub-characteristic + inspection target + file path`.
 5. **Work across languages** via multi-language tools.
 6. **Acknowledge what static analysis can't see.** DORA/SRE metrics need runtime data; this tool scores their *enablers* (CI, Dockerfile, health endpoints) and labels the result "DORA-readiness".
+7. **Flag divergent paths without taking over convergence planning.** `/grade:grade` reports duplicate active workflows or contracts as Maintainability evidence and points deeper cleanup to `/rationalize:rationalize`.
 
 ## Scoring breakdown
 
@@ -77,6 +78,8 @@ Stack-specific tools (`npm`, `pytest`, `go`, `cargo`, `mvn`, `gradle`, `mix`, `c
 - **`diff_scan.sh`** — runs the same suite scoped to files changed against a base ref (for `--diff` mode)
 - **`heuristics.sh`** — emits lightweight evidence counts for the LLM's judged criteria (resilience patterns, blocking I/O density, logging calls, etc.) — never used as direct score inputs
 - **`trend.sh`** — manages the per-repo history JSONL files so runs can diff against prior entries
+
+The report also includes a Divergent Paths section classifying candidates as `justified`, `watch`, or `rationalize`.
 
 All shell scripts reference each other via `${CLAUDE_SKILL_DIR}` so they work whether installed as a plugin or dropped into `~/.claude/skills/` directly.
 

@@ -1,0 +1,10 @@
+{
+  "name": "rationalize",
+  "description": "Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

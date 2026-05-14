@@ -27,6 +27,8 @@ This document is the **source of truth** for the `/grade` skill's rubric. It rec
 
 7. **Acknowledge what static analysis can't see.** DORA metrics (deployment frequency, MTTR, change failure rate) and SRE metrics (p99 latency, error rate) need production data. `/grade` measures their *enablers* — CI config, deploy automation, health endpoints, rollback safety — and labels the result "DORA-readiness", not "DORA score".
 
+8. **Flag divergence without turning the audit into a migration plan.** Parallel active paths for the same workflow or contract are maintainability evidence under Modularity, Reusability, Analyzability, and Modifiability. `/grade` identifies the risk and recommends rationalization when needed; a separate convergence workflow should own canonical-path decisions and cleanup sequencing.
+
 ## Anti-patterns this tool avoids
 
 - ❌ Producing a single fuzzy "quality score" with no breakdown
@@ -36,6 +38,7 @@ This document is the **source of truth** for the `/grade` skill's rubric. It rec
 - ❌ Hiding LLM judgment behind fake-precise numbers
 - ❌ Using different standards for different runs on the same repo
 - ❌ Penalizing valid architectural choices (e.g., a CLI tool shouldn't need `/healthz`)
+- ❌ Treating every duplicate path as bad without checking provider, platform, security, runtime, or compatibility boundaries
 
 ## What "objective" means here
 
@@ -107,6 +110,20 @@ Every mechanical scoring rule in `SKILL.md` uses one of these. Each row cites it
 |---|---|---|
 | Largest file LOC | <500 = good, 500–1000 = moderate, >1000 = poor | SonarQube "class size" recommendation; Clean Code (Martin 2008) rule of thumb |
 
+### Divergent implementation paths — judged evidence
+
+This is not a mechanical threshold. It is a judged Maintainability signal mapped to ISO 25010:
+
+| Evidence | ISO 25010 sub-characteristic | Interpretation |
+|---|---|---|
+| Duplicate schemas, API response types, event payloads, or OpenAPI entries for the same contract | Modularity, Reusability, Analyzability | Can create contract drift unless one source is generated from or clearly wraps another |
+| Parallel route/service/client/hook implementations for the same workflow | Modularity, Modifiability | Increases repeated change cost and makes future fixes likely to land in only one path |
+| Legacy/current branches, compatibility shims, feature flags, or old/new naming with no retirement note | Analyzability, Modifiability | Makes ownership and intended behavior unclear |
+| Tests proving similar behavior through separate helpers or fixtures | Testability, Analyzability | Can hide drift when assertions differ across paths |
+| Provider/platform/security/runtime adapters with clear boundary differences | Modularity | Often justified; document as "keep separate" rather than scoring as duplication |
+
+Score the impact through Maintainability criterion 3.4, not as a new domain. The audit should classify candidates as `justified`, `watch`, or `rationalize`; it should not choose canonical paths or migration sequencing unless the user invokes a rationalization workflow.
+
 ## Security
 
 ### Dependency Vulnerabilities — stack-native audit tools
@@ -175,7 +192,7 @@ Real DORA metrics require production telemetry. `/grade` scores the *enablers* �
 |---|---|---|
 | Correctness | tests, lint, typecheck | suppression density, functional completeness |
 | Reliability | — (all runtime) | Fault Tolerance, Recoverability, error handling quality, resilience patterns |
-| Maintainability | lizard CCN, jscpd duplication, largest file LOC | Readability, naming, architecture clarity |
+| Maintainability | lizard CCN, jscpd duplication, largest file LOC | Readability, naming, architecture clarity, divergent-path risk |
 | Security | CVSS dependency audit, gitleaks secrets | Input validation quality, safe API usage, authZ patterns |
 | Performance | — (all runtime) | Time Behavior (LLM spot-checks hot paths), Resource Utilization |
 | Test Quality | coverage %, (optional) mutation score | Test structure quality, edge case coverage, flaky patterns |
