@@ -32,6 +32,12 @@
       "source": "./plugins/pr-delivery",
       "version": "1.0.0",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, verification, and cleanup."
+    },
+    {
+      "name": "frontend-pr-loop",
+      "source": "./plugins/frontend-pr-loop",
+      "version": "1.0.0",
+      "description": "Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, and delivers it through a merged PR."
     }
   ]
 }

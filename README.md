@@ -22,6 +22,7 @@ Where `<plugin-name>` is one of the plugins listed below.
 | [`rationalize`](plugins/rationalize) | `/rationalize:rationalize` | Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths. |
 | [`codex-review`](plugins/codex-review) | `/codex-review:codex-review` | Codex code review closeout helper for local patches, PR branches, and parallel verification. |
 | [`pr-delivery`](plugins/pr-delivery) | `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, verification, and cleanup. |
+| [`frontend-pr-loop`](plugins/frontend-pr-loop) | `/frontend-pr-loop:frontend-pr-loop` | Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, and delivers it through a merged PR. |
 
 <!-- Add new plugins here as rows. Each plugin needs:
      1. Its own directory under plugins/
