@@ -16,7 +16,9 @@ Use these skills in order:
 1. `grade` for the initial audit, pre-delivery quality evidence, and the
    post-closeout loop check.
 2. `recursive-plan-review` for the remediation plan file.
-3. `pr-delivery` for commit, PR, CI monitoring, merge verification,
+3. One adversarial implementation review subagent after local verification and
+   before `pr-delivery`.
+4. `pr-delivery` for commit, PR, CI monitoring, merge verification,
    target-branch post-merge CI verification, and cleanup.
 
 Open each referenced skill's `SKILL.md` when reaching that phase and follow its
@@ -97,6 +99,36 @@ Implement the reviewed plan exactly as scoped.
    evidence that the selected issues improved. Use full grade for broad shared
    changes or when the original finding was repo-wide.
 
+## Phase 4.5 - Adversarial Implementation Review
+
+Before using `pr-delivery`, run this gate after local verification and before
+staging for commit. The loop invocation is explicit authorization for one
+bounded adversarial reviewer subagent for this gate only.
+
+Spawn one fresh reviewer subagent and give it the minimum useful context:
+
+- source grade report, remediation plan path, selected findings, and non-goals;
+- current diff, changed files, and any updated plan statuses;
+- focused and broad verification commands already run, with failures or skips;
+- final `grade` or `grade --diff <base>` evidence when it was run.
+
+Ask the reviewer to find high-confidence correctness regressions, missing or
+weak tests, plan drift, unaddressed grade findings in the selected scope,
+unnecessary complexity, boundary-case failures, verification gaps, and PR
+delivery blockers. Do not ask it to edit files, stage, commit, push, or run
+delivery.
+
+Do not load or run `pr-delivery` until verified reviewer findings that could
+affect correctness, tests, maintainability, or delivery are fixed or explicitly
+documented as non-blocking. Rerun focused verification after fixes, and rerun
+the reviewer only when the fixes materially change the implementation or the
+first review found a blocker. Include the review outcome and any deferred
+findings in the PR body or final response.
+
+If any later delivery, CI-fix, review-fix, or post-merge recovery step requires
+new implementation changes, return to this gate before continuing PR delivery
+or opening the fix PR.
+
 Do not continue to PR delivery with known failing required local checks unless
 the failure is unrelated, documented, and the repo's delivery rules permit it.
 
@@ -139,10 +171,11 @@ hypothesis. Enumerate infrastructure causes such as Docker daemon availability,
 Compose collisions, stale generated files, browser setup drift, missing
 statuses, registry/network issues, or runner capacity. Reproduce locally when
 logs are unavailable or inconclusive. If the delivered work caused the failure,
-fix it in a new PR, merge it, and verify the new merge commit's target-branch
-CI before continuing to rebuild or the post-closeout grade check. If the
-failure is unrelated or infrastructural, report the evidence and stop instead
-of claiming a clean closeout.
+fix it in a new PR after rerunning the adversarial implementation review gate
+for the fix, merge it, and verify the new merge commit's target-branch CI before
+continuing to rebuild or the post-closeout grade check. If the failure is
+unrelated or infrastructural, report the evidence and stop instead of claiming a
+clean closeout.
 
 ## Phase 6 - Rebuild Running Localhost Containers
 
@@ -203,6 +236,7 @@ Report concisely:
 - post-closeout grade-loop result and whether another remediation pass was
   skipped, deferred, or completed;
 - remediation plan path and recursive-plan-review pass count;
+- adversarial review outcome and any fixes or deferred findings from it;
 - main implementation changes;
 - local verification commands and CI result;
 - PR number/link, forge type, merge commit, and ancestry verification;

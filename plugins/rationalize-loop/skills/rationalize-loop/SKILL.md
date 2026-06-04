@@ -16,7 +16,9 @@ Use these skills in order:
 1. `rationalize` for the initial divergence inventory, canonical-path decisions,
    convergence plan, and post-closeout loop check.
 2. `recursive-plan-review` for the convergence plan file before implementation.
-3. `pr-delivery` for commit, PR, CI monitoring, merge verification,
+3. One adversarial implementation review subagent after local verification and
+   before `pr-delivery`.
+4. `pr-delivery` for commit, PR, CI monitoring, merge verification,
    target-branch post-merge CI verification, and cleanup.
 
 Use `grade` only as supporting evidence when it helps prove quality movement,
@@ -129,6 +131,38 @@ Implement the reviewed convergence phase exactly as scoped.
 9. Run `$grade --diff <base>` or full `$grade` when it provides meaningful
    evidence that convergence did not regress quality.
 
+## Phase 4.5 - Adversarial Implementation Review
+
+Before using `pr-delivery`, run this gate after local verification and before
+staging for commit. The loop invocation is explicit authorization for one
+bounded adversarial reviewer subagent for this gate only.
+
+Spawn one fresh reviewer subagent and give it the minimum useful context:
+
+- rationalization plan path, selected converge/remove decisions, and non-goals;
+- current diff, changed files, and any updated plan statuses;
+- caller/dead-path evidence, compatibility or migration notes, and adapter
+  boundary decisions;
+- focused and broad verification commands already run, with failures or skips;
+- optional `grade` evidence when it was run.
+
+Ask the reviewer to find high-confidence correctness regressions, canonical
+path drift, compatibility or migration gaps, unproved dead-path removals,
+missing contract/drift tests, boundary abstraction mistakes, verification gaps,
+and PR delivery blockers. Do not ask it to edit files, stage, commit, push, or
+run delivery.
+
+Do not load or run `pr-delivery` until verified reviewer findings that could
+affect correctness, compatibility, tests, convergence integrity, or delivery
+are fixed or explicitly documented as non-blocking. Rerun focused verification
+after fixes, and rerun the reviewer only when the fixes materially change the
+implementation or the first review found a blocker. Include the review outcome
+and any deferred findings in the PR body or final response.
+
+If any later delivery, CI-fix, review-fix, or post-merge recovery step requires
+new implementation changes, return to this gate before continuing PR delivery
+or opening the fix PR.
+
 Do not continue to PR delivery with known failing required local checks unless
 the failure is unrelated, documented, and the repo's delivery rules permit it.
 
@@ -171,10 +205,11 @@ hypothesis. Enumerate infrastructure causes such as Docker daemon availability,
 Compose collisions, stale generated files, browser setup drift, missing
 statuses, registry/network issues, or runner capacity. Reproduce locally when
 logs are unavailable or inconclusive. If the delivered work caused the failure,
-fix it in a new PR, merge it, and verify the new merge commit's target-branch
-CI before continuing to rebuild or the post-closeout rationalize check. If the
-failure is unrelated or infrastructural, report the evidence and stop instead
-of claiming a clean closeout.
+fix it in a new PR after rerunning the adversarial implementation review gate
+for the fix, merge it, and verify the new merge commit's target-branch CI before
+continuing to rebuild or the post-closeout rationalize check. If the failure is
+unrelated or infrastructural, report the evidence and stop instead of claiming a
+clean closeout.
 
 ## Phase 6 - Rebuild Running Localhost Containers
 
@@ -242,6 +277,7 @@ Report concisely:
 
 - rationalization plan path and selected converge/remove decisions;
 - recursive-plan-review pass count;
+- adversarial review outcome and any fixes or deferred findings from it;
 - implementation changes and compatibility policy applied;
 - local verification commands and CI result;
 - optional grade evidence if run;

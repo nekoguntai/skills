@@ -5,7 +5,7 @@ description: End-to-end autonomous frontend/UI improvement and PR delivery loop 
 
 # Frontend PR Loop
 
-Use this skill to run the recurring loop cleanly. A bare `$frontend-pr-loop` or "run the frontend PR loop" means autonomous delivery mode: inspect the frontend, choose a bounded improvement, make a short working plan, implement it, verify it, use PR delivery through merge, verify target-branch post-merge CI, rebuild already-running localhost app containers, and rerun a bounded frontend inspection without asking the user to proceed between phases.
+Use this skill to run the recurring loop cleanly. A bare `$frontend-pr-loop` or "run the frontend PR loop" means autonomous delivery mode: inspect the frontend, choose a bounded improvement, make a short working plan, implement it, verify it, run a pre-delivery adversarial implementation review, use PR delivery through merge, verify target-branch post-merge CI, rebuild already-running localhost app containers, and rerun a bounded frontend inspection without asking the user to proceed between phases.
 
 Only stop after analysis when the user explicitly asks for recommendations, ideas, analysis, a review, a plan, or no changes.
 
@@ -13,11 +13,11 @@ Only stop after analysis when the user explicitly asks for recommendations, idea
 
 1. Read repo instructions first: `AGENTS.md`, `CLAUDE.md`, `docs/`, and active `docs/plans/` notes when present.
 2. Classify the request:
-   - **Autonomous loop / bare invocation:** for `$frontend-pr-loop`, `/frontend-pr-loop`, "run the frontend PR loop", "frontend PR loop", or equivalent, do the full loop end to end. Do not stop at recommendations or ask "should I proceed?" Choose one coherent, bounded frontend improvement if the user did not name a specific target. Implement, verify, commit, push, open/update the PR, monitor checks/reviews, merge safely, verify merge ancestry, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection, and report. This mode is explicit PR delivery and merge authorization for the work created by this loop only.
+   - **Autonomous loop / bare invocation:** for `$frontend-pr-loop`, `/frontend-pr-loop`, "run the frontend PR loop", "frontend PR loop", or equivalent, do the full loop end to end. Do not stop at recommendations or ask "should I proceed?" Choose one coherent, bounded frontend improvement if the user did not name a specific target. Implement, verify, run a pre-delivery adversarial implementation review, commit, push, open/update the PR, monitor checks/reviews, merge safely, verify merge ancestry, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection, and report. This mode is explicit PR delivery and merge authorization for the work created by this loop only.
    - **Recommend / analyze / no changes:** inspect only and do not edit files when the user explicitly asks for recommendations, ideas, analysis, review, or no changes.
    - **Plan:** write or update a checkable plan, usually under `docs/plans/`, when the user explicitly asks for a plan; use `$recursive-plan-review` when invoked or when the user asks to make the plan complete.
    - **Implement only:** apply the reviewed plan or the user's chosen recommendation in focused slices, update the plan if scope changes, and verify. Stop after local verification unless the request also includes PR/delivery/merge language or came from autonomous loop mode.
-   - **Triage open PR / merge / deliver:** use `$pr-delivery`. In autonomous loop mode, this is already authorized; otherwise do not merge unless the user explicitly requested delivery/merge.
+   - **Triage open PR / merge / deliver:** use `$pr-delivery` directly only for existing PR work with no new local implementation. If the request includes implementation plus delivery, complete the Pre-Delivery Adversarial Review gate before `$pr-delivery`. In autonomous loop mode, this is already authorized; otherwise do not merge unless the user explicitly requested delivery/merge.
    - **Rebuild running containers:** after any delivered autonomous loop merge, rebuild only app containers that are already running locally. For standalone rebuild requests, rebuild only when explicitly requested.
 3. Preserve unrelated dirty work. Stage only task files. Never revert unrelated user changes.
 
@@ -38,9 +38,10 @@ In autonomous loop mode, run these phases without pausing for permission:
 3. Pick the highest-value bounded slice that can be completed safely in the current repo state.
 4. State the working plan briefly in commentary. If the slice is broad, changes shared primitives, or creates/updates a plan file, run `$recursive-plan-review` on the plan and apply verified comments before implementation.
 5. Run focused verification first, then broader checks based on blast radius.
-6. Use `$pr-delivery` to commit only relevant files, push, open/update the PR, monitor CI/reviews, fix failures, merge safely, verify target-branch ancestry, verify target-branch post-merge CI for the merge commit, and clean up.
-7. Rebuild already-running localhost app containers after the verified merge and green target-branch CI.
-8. Run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
+6. Run the pre-delivery adversarial implementation review and resolve verified findings.
+7. Use `$pr-delivery` to commit only relevant files, push, open/update the PR, monitor CI/reviews, fix failures, merge safely, verify target-branch ancestry, verify target-branch post-merge CI for the merge commit, and clean up.
+8. Rebuild already-running localhost app containers after the verified merge and green target-branch CI.
+9. Run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
 
 Do not ask the user to choose among recommendations in autonomous mode. If several improvements are viable, pick the most defensible one and leave the rest as follow-up notes after delivery.
 
@@ -105,9 +106,38 @@ git diff --cached --check
 
 Use focused tests first, then broaden based on risk.
 
+## Pre-Delivery Adversarial Review
+
+Before using `$pr-delivery` for implementation work, run this gate after local
+verification and before staging for commit. The loop invocation is explicit
+authorization for one bounded adversarial reviewer subagent for this gate only.
+
+Spawn one fresh reviewer subagent and give it the minimum useful context:
+
+- selected issue, plan path when present, and non-goals;
+- current diff, changed files, and any screenshots or rendered-state evidence
+  for user-facing visual changes;
+- focused and broad verification commands already run, with failures or skips.
+
+Ask the reviewer to find high-confidence bugs, regressions, accessibility or
+responsive layout problems, plan drift, missing tests, scope creep,
+verification gaps, and PR delivery blockers. Do not ask it to edit files,
+stage, commit, push, or run delivery.
+
+Do not load or run `$pr-delivery` until verified reviewer findings that could
+affect correctness, UX, tests, or delivery are fixed or explicitly documented
+as non-blocking. Rerun focused verification after fixes, and rerun the reviewer
+only when the fixes materially change the implementation or the first review
+found a blocker. Include the review outcome and any deferred findings in the PR
+body or final response.
+
+If any later delivery, CI-fix, review-fix, or post-merge recovery step requires
+new implementation changes, return to this gate before continuing PR delivery
+or opening the fix PR.
+
 ## PR Triage And Delivery
 
-Use `$pr-delivery` whenever the user asks to open, deliver, merge, monitor, or clean up a PR.
+Use `$pr-delivery` whenever the user asks to open, deliver, merge, monitor, or clean up a PR. For requests that include new implementation work, this section starts only after the Pre-Delivery Adversarial Review gate is complete.
 
 Autonomous loop mode counts as an explicit request to open/update, deliver, and merge the PR for this loop. Load and follow the `pr-delivery` skill; do not ask for another confirmation before PR creation or merge unless a blocker creates new risk outside the requested loop.
 
@@ -137,7 +167,7 @@ If post-merge target-branch CI fails:
 - Do not start another autonomous loop pass or merge another PR.
 - Inspect diagnostics first, including infrastructure causes such as runner capacity, Docker availability, Compose collisions, stale generated files, browser setup, missing statuses, registry/network issues, or known flaky signatures.
 - Reproduce the failing command locally when logs are unavailable or inconclusive.
-- If the delivered work caused the failure, fix it in a new PR using `$pr-delivery`, merge it, and verify the target-branch CI for the new merge commit.
+- If the delivered work caused the failure, fix it in a new PR after rerunning the Pre-Delivery Adversarial Review gate for the fix, use `$pr-delivery`, merge it, and verify the target-branch CI for the new merge commit.
 - If the failure is unrelated infrastructure or pre-existing drift, report the evidence and stop instead of claiming a clean closeout.
 
 ## Post-Merge Rebuild
@@ -182,6 +212,7 @@ Report concisely:
 
 - selected frontend issue and any deferred findings;
 - plan path and recursive-plan-review pass count when a plan file was used;
+- adversarial review outcome and any fixes or deferred findings from it;
 - implementation changes and verification commands;
 - PR number/link, forge type, merge commit, and ancestry verification;
 - target-branch post-merge CI run and result;
