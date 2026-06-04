@@ -1,6 +1,6 @@
 ---
 name: grade-loop
-description: End-to-end quality remediation loop for a repository. Use when the user invokes $grade-loop, asks Codex to run a grade/audit, turn major findings into a reviewed remediation plan, implement that plan, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun grade to decide whether another remediation pass is needed.
+description: "End-to-end quality remediation loop for a repository. Use when the user invokes $grade-loop, asks Codex to run a grade/audit, turn major findings into a reviewed remediation plan, implement that plan, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun grade to decide whether another remediation pass is needed."
 ---
 
 # Grade Loop
