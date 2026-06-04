@@ -1,7 +1,13 @@
 ---
 name: pr-delivery
-description: End-to-end pull request delivery workflow for GitHub or Forgejo repositories: commit local changes, push a branch, open/update a PR, monitor CI/reviews, fix failures, merge safely, verify target-branch ancestry, and clean up branches/worktrees afterward. Use when the user explicitly asks Claude to ship, deliver, open-and-merge, monitor checks, address PR feedback, merge through queue/protected branch flow, or clean up a PR worktree after merge.
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
+description: >-
+  End-to-end pull request delivery workflow for GitHub or Forgejo repositories:
+  commit local changes, push a branch, open/update a PR, monitor CI/reviews,
+  fix failures, merge safely, verify target-branch ancestry, optionally verify
+  target-branch post-merge CI, and clean up branches/worktrees afterward. Use
+  when the user explicitly asks Codex to ship, deliver, open-and-merge, monitor
+  checks, address PR feedback, merge through queue/protected branch flow, or
+  clean up a PR worktree after merge.
 ---
 
 # PR Delivery
@@ -20,6 +26,7 @@ This workflow supports two forge families:
 - Never revert unrelated user changes. If unrelated dirty files exist, leave them alone or move the task to an isolated worktree.
 - Do not use broad destructive approvals. For cleanup commands that remove branches or worktrees, request exact one-off approval when the environment requires it.
 - Verify the merge by checking that the platform-reported merge commit is a real git object reachable from the target branch. Platform state such as `merged: true`, `mergedAt`, or `closed` is evidence, not proof.
+- When this skill is called by an autonomous loop skill, or when the user asks for final/target-branch CI verification, also wait for the target-branch CI run triggered by the merge commit before considering delivery complete.
 - For squash merges, verify the merge commit SHA, not the PR head SHA. The PR head SHA does not land on the target branch after a squash merge.
 - On Forgejo, keep `delete_branch_after_merge: false` in API merge payloads. Delete branches yourself only after git ancestry verification passes.
 - **Never combine `gh pr merge --auto --delete-branch` on a GitHub merge-queue repo**. The CLI can close the PR without merging and delete the branch as cleanup. On merge-queue repos, only ever use `gh pr merge <num> --auto` with no extra flags.
@@ -274,11 +281,37 @@ This workflow supports two forge families:
    - For GitHub, use `gh pr view <num> --json state,mergedAt,mergeCommit`.
    - For Forgejo, use `GET /api/v1/repos/{owner}/{repo}/pulls/{index}` and inspect `state`, `merged`, `merged_at`, and `merge_commit_sha`.
    - Sync the local target branch only when doing so will not overwrite unrelated local work.
+   - When invoked from an autonomous loop or when requested, wait for the target-branch `push`/merge-queue CI run for the verified merge commit and require success before cleanup or loop closeout.
+
+   **Target-branch CI commands**
+
+   Forgejo:
+
+   ```bash
+   curl -fsS -H "Authorization: token $FORGEJO_TOKEN" \
+     "$FORGEJO_API/repos/$FORGEJO_OWNER/$FORGEJO_REPO/actions/runs?head_sha=$MERGE_SHA&limit=20" \
+     | jq -r '.workflow_runs[]? | [.id, .status, (.conclusion // ""), .event, .title, .html_url] | @tsv'
+   ```
+
+   If the Forgejo instance does not filter by `head_sha`, query recent runs and
+   match by target branch, event, title, or run URL before relying on the result.
+
+   GitHub:
+
+   ```bash
+   gh run list --branch "$BASE_BRANCH" --commit "$MERGE_SHA" --limit 20
+   gh run view <run-id> --json status,conclusion,jobs
+   ```
+
+   If target-branch CI fails or is missing, inspect logs or reproduce the
+   failing command locally before pushing any retrigger-only commit. Treat
+   unrelated infrastructure failures separately from regressions caused by the
+   delivered PR.
 
 8. Clean up only after verification.
    - Check `git status --short` in the PR worktree.
-   - Delete the remote PR branch only after the merge commit is verified reachable from the target branch.
-   - Delete the local branch only after switching away from it and confirming the merge commit is reachable from the target branch.
+   - Delete the remote PR branch only after the merge commit is verified reachable from the target branch and any required target-branch CI verification is green.
+   - Delete the local branch only after switching away from it and confirming the merge commit is reachable from the target branch and any required target-branch CI verification is green.
    - Remove temporary worktrees only after confirming they have no uncommitted changes.
    - Use exact cleanup commands; do not request persistent destructive approvals.
 
@@ -290,5 +323,6 @@ Report:
 - Checks or review failures encountered and how they were fixed.
 - Verification commands run locally and in CI.
 - Post-merge ancestry verification result.
+- Target-branch post-merge CI result when requested or when invoked by an autonomous loop.
 - Branch/worktree cleanup completed or intentionally left pending.
 - Any residual risk or follow-up.

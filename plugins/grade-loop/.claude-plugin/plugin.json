@@ -1,0 +1,10 @@
+{
+  "name": "grade-loop",
+  "description": "End-to-end quality remediation loop that grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

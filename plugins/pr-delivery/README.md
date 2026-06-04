@@ -1,6 +1,6 @@
 # pr-delivery
 
-End-to-end pull request delivery workflow for taking local changes through commit, push, PR creation, checks, reviews, safe merge, verification, and branch/worktree cleanup.
+End-to-end pull request delivery workflow for taking local changes through commit, push, PR creation, checks, reviews, safe merge, optional target-branch post-merge CI verification, and branch/worktree cleanup.
 
 Ships one skill:
 
@@ -29,7 +29,7 @@ Then in any repo:
 - CI, check, and review monitoring
 - GitHub merge queue and protected-branch merge handling
 - Forgejo scheduled auto-merge handling
-- Post-merge verification and safe cleanup
+- Post-merge ancestry verification, optional target-branch CI verification, and safe cleanup
 
 ## License
 

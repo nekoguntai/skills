@@ -21,8 +21,10 @@ Where `<plugin-name>` is one of the plugins listed below.
 | [`grade`](plugins/grade) | `/grade:grade`, `/grade:grade-history` | Strict, evidence-driven software quality audit anchored to ISO/IEC 25010. Multi-domain scoring, full + diff modes, divergent-path findings, trend tracking, multi-language. |
 | [`rationalize`](plugins/rationalize) | `/rationalize:rationalize` | Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths. |
 | [`codex-review`](plugins/codex-review) | `/codex-review:codex-review` | Codex code review closeout helper for local patches, PR branches, and parallel verification. |
-| [`pr-delivery`](plugins/pr-delivery) | `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, verification, and cleanup. |
-| [`frontend-pr-loop`](plugins/frontend-pr-loop) | `/frontend-pr-loop:frontend-pr-loop` | Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, and delivers it through a merged PR. |
+| [`pr-delivery`](plugins/pr-delivery) | `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup. |
+| [`frontend-pr-loop`](plugins/frontend-pr-loop) | `/frontend-pr-loop:frontend-pr-loop` | Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, delivers it through a merged PR, verifies target-branch post-merge CI, rebuilds running app containers, and rechecks. |
+| [`grade-loop`](plugins/grade-loop) | `/grade-loop:grade-loop` | End-to-end quality remediation loop that grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade. |
+| [`rationalize-loop`](plugins/rationalize-loop) | `/rationalize-loop:rationalize-loop` | End-to-end convergence remediation loop that rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize. |
 
 <!-- Add new plugins here as rows. Each plugin needs:
      1. Its own directory under plugins/

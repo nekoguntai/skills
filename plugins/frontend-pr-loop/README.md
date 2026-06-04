@@ -4,7 +4,7 @@ Autonomous frontend/UI improvement loop for application repositories.
 
 Ships one skill:
 
-- **`/frontend-pr-loop:frontend-pr-loop`** - inspect the frontend, choose a bounded improvement, implement it, verify it, and deliver it through a merged PR
+- **`/frontend-pr-loop:frontend-pr-loop`** - inspect the frontend, choose a bounded improvement, implement it, verify it, deliver it through a merged PR, verify target-branch post-merge CI, rebuild running app containers, and recheck
 
 ## Install
 
@@ -25,8 +25,8 @@ Then in any repo:
 - Frontend surface inspection and bounded improvement selection
 - Read-only recommendation mode when explicitly requested
 - Implementation with focused verification
-- PR creation, CI/review monitoring, safe merge, and ancestry verification through `/pr-delivery:pr-delivery`
-- Optional post-merge container rebuild only when requested
+- PR creation, CI/review monitoring, safe merge, ancestry verification, and target-branch post-merge CI verification through `/pr-delivery:pr-delivery`
+- Post-merge container rebuild for already-running app services in autonomous loop mode
 
 ## License
 

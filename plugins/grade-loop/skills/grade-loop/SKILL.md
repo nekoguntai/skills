@@ -1,0 +1,213 @@
+---
+name: grade-loop
+description: End-to-end quality remediation loop for a repository. Use when the user invokes $grade-loop, asks Codex to run a grade/audit, turn major findings into a reviewed remediation plan, implement that plan, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun grade to decide whether another remediation pass is needed.
+---
+
+# Grade Loop
+
+Use this skill to take a repository from quality audit to merged remediation,
+green target-branch post-merge CI, and post-merge local rebuild. This is an
+execution loop, not a chat-only report.
+
+## Required Skill Order
+
+Use these skills in order:
+
+1. `grade` for the initial audit, pre-delivery quality evidence, and the
+   post-closeout loop check.
+2. `recursive-plan-review` for the remediation plan file.
+3. `pr-delivery` for commit, PR, CI monitoring, merge verification,
+   target-branch post-merge CI verification, and cleanup.
+
+Open each referenced skill's `SKILL.md` when reaching that phase and follow its
+rules. Do not substitute a lighter workflow when the user asked for the loop.
+
+## Preflight
+
+1. Read repo instructions such as `AGENTS.md`, `CLAUDE.md`, project docs, and
+   active planning notes when present.
+2. Run `git status --short --branch`, `git branch --show-current`, and
+   `git show -s --format='%h %D %s' HEAD`.
+3. Preserve unrelated dirty work. If unrelated local changes exist, either leave
+   them unstaged or create an isolated branch/worktree before implementation.
+4. Determine the target branch from the remote default branch or existing PR.
+5. If already on the target branch, create a task branch before source edits
+   unless the user explicitly requested direct target-branch work.
+
+## Phase 1 - Grade
+
+Run the `grade` skill in full mode unless the user explicitly asks for diff
+mode. Let it update `docs/plans/codebase-health-assessment.md`.
+
+After grading, extract only the major actionable issues:
+
+- hard-fail blockers first;
+- then top risks and fastest improvements with clear evidence;
+- then roadmap items that are high impact and feasible in one PR;
+- exclude purely speculative, low-evidence, or churn-heavy recommendations.
+
+If the grade finds no major actionable issues, record the result and stop the
+implementation/PR portion unless the user explicitly wants a no-op documentation
+PR.
+
+## Phase 2 - Remediation Plan
+
+Write or update a plan file, defaulting to
+`docs/plans/grade-loop-remediation-plan.md` unless repo instructions name a
+better location. If the plan contains private operational details, use the
+repo's private-plans location when documented.
+
+The plan must include:
+
+- source grade report path, date, commit, score, and selected findings;
+- objective and non-goals;
+- phases ordered by dependency and risk;
+- concrete file areas to inspect or change;
+- compatibility and rollback/backout notes for risky changes;
+- verification commands for each phase and for final closeout;
+- acceptance criteria proving each selected issue is fixed;
+- explicit deferred findings with reasons.
+
+Keep the plan bounded to what can reasonably be implemented and merged in one
+PR. If the grade contains multiple unrelated major issues, choose the smallest
+coherent high-impact slice and defer the rest explicitly.
+
+## Phase 3 - Recursive Plan Review
+
+Run `recursive-plan-review` on the plan file. Apply its accepted improvements
+directly to the plan and repeat until the review reports no verified actionable
+comments remain.
+
+If plan review requires a product decision that cannot be inferred from source
+or project docs, ask the user for that decision before implementation. Do not
+invent policy.
+
+## Phase 4 - Implement
+
+Implement the reviewed plan exactly as scoped.
+
+1. Update the plan statuses as work completes or if implementation must diverge.
+2. Prefer existing repository patterns and helper APIs.
+3. Add behavioral or drift tests for every contract, policy, or workflow change
+   that could regress.
+4. Do a simplification/self-review pass before verification.
+5. Run the plan's focused verification first, then broader repo gates
+   proportional to the blast radius.
+6. Run a final `grade` or `grade --diff <base>` when it will provide meaningful
+   evidence that the selected issues improved. Use full grade for broad shared
+   changes or when the original finding was repo-wide.
+
+Do not continue to PR delivery with known failing required local checks unless
+the failure is unrelated, documented, and the repo's delivery rules permit it.
+
+## Phase 5 - PR Delivery
+
+Use `pr-delivery` for the full delivery path:
+
+1. Stage only task-related files.
+2. Run `git diff --cached --check`.
+3. Commit with a concrete behavior-focused message.
+4. Push the branch and open or update a PR.
+5. Monitor CI and reviews until required checks are green and the PR is
+   mergeable.
+6. Fix CI failures with code/docs/tests, rerun local repros, commit, push, and
+   repeat.
+7. Merge safely through the forge, verify the platform-reported merge commit is
+   reachable from the target branch, verify the target-branch CI run for that
+   merge commit is complete and successful, and clean up local/remote PR
+   branches only after those verifications pass.
+
+Never weaken branch protection, bypass red checks, or treat platform "merged"
+state alone as proof.
+
+## Phase 5.5 - Target-Branch Post-Merge CI
+
+After ancestry verification, wait for the CI run triggered on the target branch
+by the exact merge commit or squash merge commit. The loop is not complete while
+that run is pending, missing, failed, or cancelled.
+
+Provider guidance:
+
+- Forgejo: query recent Actions runs filtered by merge commit SHA when possible;
+  otherwise query recent target-branch `push` runs and match the head SHA/title.
+  Confirm the required aggregate status and relevant jobs are `success`.
+- GitHub: use `gh run list --branch <target-branch> --commit <merge-sha>` and
+  `gh run view`, or equivalent check-rollup commands.
+
+If target-branch CI fails, inspect run/job diagnostics before forming a
+hypothesis. Enumerate infrastructure causes such as Docker daemon availability,
+Compose collisions, stale generated files, browser setup drift, missing
+statuses, registry/network issues, or runner capacity. Reproduce locally when
+logs are unavailable or inconclusive. If the delivered work caused the failure,
+fix it in a new PR, merge it, and verify the new merge commit's target-branch
+CI before continuing to rebuild or the post-closeout grade check. If the
+failure is unrelated or infrastructural, report the evidence and stop instead
+of claiming a clean closeout.
+
+## Phase 6 - Rebuild Running Localhost Containers
+
+After the PR merge and target-branch CI are verified and the local target
+branch is synced, rebuild only app containers that are already running locally.
+
+Detection:
+
+- Inspect `docker compose ps` when the repo has a Compose file.
+- Inspect `docker ps` for containers bound to localhost ports when Compose is
+  absent or ambiguous.
+- Use repo instructions to identify app services and health endpoints.
+
+Rebuild:
+
+- If app services are already running, rebuild them in place with the repo's
+  documented command, such as `docker compose up -d --build app worker`.
+- Do not start stopped services only to satisfy this step.
+- If no matching localhost app containers are running, report that rebuild was
+  skipped.
+
+Verify:
+
+- Run `docker compose ps` or equivalent status command.
+- Curl documented health/readiness endpoints when present.
+- If rebuild or health fails, inspect logs, fix issues caused by the PR when
+  possible, and redeliver if a code fix is required.
+
+## Phase 7 - Post-Closeout Grade Loop Check
+
+After merge verification and any required localhost rebuild/health checks,
+rerun the `grade` skill from the synced target branch.
+
+Use full mode unless the repository or user explicitly requires a diff-only
+follow-up. Let it update `docs/plans/codebase-health-assessment.md` and trend
+history again.
+
+Then inspect the refreshed grade report for major actionable issues using the
+same selection rules from Phase 1:
+
+- If no major actionable issues remain, record that result and finish.
+- If major actionable issues remain and they are feasible in another bounded
+  PR, start another loop at Phase 2 using a new plan or an updated plan that
+  clearly identifies the next selected findings.
+- If major issues remain but are too broad, blocked, speculative, or require a
+  product/operational decision, record the blocker or deferral and stop instead
+  of forcing an unsafe PR.
+
+Do not keep looping indefinitely on low-evidence recommendations or on the same
+rejected/deferred findings. Each additional pass must select a concrete,
+evidence-backed remediation slice that can be implemented and delivered safely.
+
+## Final Response
+
+Report concisely:
+
+- initial and final grade evidence, including report path and score movement;
+- post-closeout grade-loop result and whether another remediation pass was
+  skipped, deferred, or completed;
+- remediation plan path and recursive-plan-review pass count;
+- main implementation changes;
+- local verification commands and CI result;
+- PR number/link, forge type, merge commit, and ancestry verification;
+- target-branch post-merge CI run and result;
+- branch/worktree cleanup;
+- container rebuild command and health/readiness results, or why rebuild was
+  skipped;
+- deferred grade findings and residual risks.
