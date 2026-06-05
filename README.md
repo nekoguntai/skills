@@ -1,8 +1,26 @@
 # nekoguntai / skills
 
-A personal Claude Code plugin marketplace. Each plugin lives in its own subdirectory under `plugins/` and ships one or more skills.
+A personal skills repository. The historical marketplace metadata in this repo
+uses Claude Code plugin paths, while newer plugins may also include Codex
+metadata such as `.codex-plugin/plugin.json`. Each plugin lives in its own
+subdirectory under `plugins/` and ships one or more skills.
 
-## Quick install
+## Codex Local Use
+
+For Codex, install or sync a skill file into:
+
+```
+$CODEX_HOME/skills/<skill-name>/SKILL.md
+```
+
+For example, `bug-scrub` is invoked as:
+
+```
+$bug-scrub
+$bug-scrub --diff origin/main
+```
+
+## Legacy Plugin Install
 
 Add the marketplace once, then install any plugin from it:
 
@@ -20,6 +38,7 @@ Where `<plugin-name>` is one of the plugins listed below.
 |---|---|---|
 | [`grade`](plugins/grade) | `/grade:grade`, `/grade:grade-history` | Strict, evidence-driven software quality audit anchored to ISO/IEC 25010. Multi-domain scoring, full + diff modes, divergent-path findings, trend tracking, multi-language. |
 | [`rationalize`](plugins/rationalize) | `/rationalize:rationalize` | Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths. |
+| [`bug-scrub`](plugins/bug-scrub) | `$bug-scrub`, `/bug-scrub:bug-scrub` | Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases. |
 | [`codex-review`](plugins/codex-review) | `/codex-review:codex-review` | Codex code review closeout helper for local patches, PR branches, and parallel verification. |
 | [`pr-delivery`](plugins/pr-delivery) | `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup. |
 | [`frontend-pr-loop`](plugins/frontend-pr-loop) | `/frontend-pr-loop:frontend-pr-loop` | Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, delivers it through a merged PR, verifies target-branch post-merge CI, rebuilds running app containers, and rechecks. |

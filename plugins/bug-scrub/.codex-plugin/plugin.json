@@ -1,0 +1,36 @@
+{
+  "name": "bug-scrub",
+  "version": "1.0.0",
+  "description": "Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "bug-scrub",
+    "bug-hunt",
+    "code-review",
+    "defect-analysis"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Bug Scrub",
+    "shortDescription": "Find high-confidence bugs in repos and diffs.",
+    "longDescription": "Evidence-driven bug scrub for repositories and diffs. Focuses on real correctness defects, supports bounded subagent sharding for large codebases, and keeps findings tied to concrete failure paths and verification.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Analyze"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Bug scrub this repo.",
+      "Bug scrub this diff vs origin/main.",
+      "Use subagents to bug scrub this large repo."
+    ]
+  }
+}

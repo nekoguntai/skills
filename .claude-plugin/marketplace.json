@@ -21,6 +21,12 @@
       "description": "Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths."
     },
     {
+      "name": "bug-scrub",
+      "source": "bug-scrub",
+      "version": "1.0.0",
+      "description": "Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases."
+    },
+    {
       "name": "codex-review",
       "source": "./plugins/codex-review",
       "version": "1.0.0",

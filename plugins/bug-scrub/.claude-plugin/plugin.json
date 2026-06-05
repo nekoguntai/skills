@@ -1,0 +1,10 @@
+{
+  "name": "bug-scrub",
+  "description": "Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}
