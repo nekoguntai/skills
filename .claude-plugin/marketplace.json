@@ -35,8 +35,14 @@
     {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup."
+    },
+    {
+      "name": "recursive-plan-review",
+      "source": "./plugins/recursive-plan-review",
+      "version": "1.0.0",
+      "description": "Iterative plan-file critique and refinement that applies evidence-backed improvements until no actionable comments remain."
     },
     {
       "name": "frontend-pr-loop",

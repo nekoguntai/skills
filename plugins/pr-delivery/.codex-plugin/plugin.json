@@ -1,0 +1,39 @@
+{
+  "name": "pr-delivery",
+  "version": "1.2.0",
+  "description": "End-to-end pull request delivery workflow for GitHub and Forgejo repositories.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "pull-request",
+    "pr-delivery",
+    "ci",
+    "merge",
+    "github",
+    "forgejo"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "PR Delivery",
+    "shortDescription": "Ship, monitor, merge, verify CI, and clean up PRs.",
+    "longDescription": "End-to-end pull request delivery workflow for GitHub and Forgejo repositories. Covers commit, push, PR creation, CI and review monitoring, safe merge, ancestry verification, optional target-branch CI verification, and cleanup.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Use $pr-delivery to deliver this branch through a PR.",
+      "Open or update the PR, monitor checks, merge safely, verify target-branch CI, and clean up.",
+      "Address PR feedback and failed checks, then complete delivery."
+    ]
+  }
+}

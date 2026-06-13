@@ -1,12 +1,33 @@
 # pr-delivery
 
-End-to-end pull request delivery workflow for taking local changes through commit, push, PR creation, checks, reviews, safe merge, optional target-branch post-merge CI verification, and branch/worktree cleanup.
+End-to-end pull request delivery workflow for GitHub and Forgejo repositories.
+The skill takes local changes through commit, push, PR creation, checks,
+reviews, safe merge, optional target-branch post-merge CI verification, and
+branch/worktree cleanup.
 
 Ships one skill:
 
-- **`/pr-delivery:pr-delivery`** - deliver a branch through the full pull request lifecycle
+- **`$pr-delivery`** / **`/pr-delivery:pr-delivery`** - deliver a branch through the full pull request lifecycle
 
-## Install
+## Codex Use
+
+This plugin includes Codex metadata at `.codex-plugin/plugin.json`. The skill
+can also be installed as a local skill by copying or syncing
+`skills/pr-delivery/SKILL.md` to `$CODEX_HOME/skills/pr-delivery/SKILL.md`.
+
+The current local install path is:
+
+```
+~/.codex/skills/pr-delivery/SKILL.md
+```
+
+In any Codex session:
+
+```
+$pr-delivery
+```
+
+## Legacy Marketplace Install
 
 ```
 /plugin marketplace add nekoguntai/skills
@@ -14,7 +35,7 @@ Ships one skill:
 /reload-plugins
 ```
 
-Then in any repo:
+Then in any compatible plugin session:
 
 ```
 /pr-delivery:pr-delivery

@@ -1,0 +1,10 @@
+{
+  "name": "recursive-plan-review",
+  "description": "Iterative plan-file critique and refinement until no actionable comments remain.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

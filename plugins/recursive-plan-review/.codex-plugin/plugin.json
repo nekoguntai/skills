@@ -1,0 +1,37 @@
+{
+  "name": "recursive-plan-review",
+  "version": "1.0.0",
+  "description": "Iterative plan-file critique and refinement until no actionable comments remain.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "plan-review",
+    "planning",
+    "recursive-review",
+    "verification"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Recursive Plan Review",
+    "shortDescription": "Review and refine plan files until clean.",
+    "longDescription": "Iterative plan-file critique and refinement. Reviews one concrete plan file, applies evidence-backed improvements, and repeats until no verified actionable comments remain.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Analyze"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Use $recursive-plan-review to review and refine this plan file.",
+      "Review this plan recursively until no actionable comments remain.",
+      "Challenge this plan file, apply verified improvements, and repeat until clean."
+    ]
+  }
+}
