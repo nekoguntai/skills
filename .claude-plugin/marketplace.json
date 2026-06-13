@@ -45,6 +45,12 @@
       "description": "Iterative plan-file critique and refinement that applies evidence-backed improvements until no actionable comments remain."
     },
     {
+      "name": "release",
+      "source": "./plugins/release",
+      "version": "1.0.0",
+      "description": "Repository-native release execution and release-infrastructure remediation through gates, tags, artifacts, and publication checks."
+    },
+    {
       "name": "frontend-pr-loop",
       "source": "./plugins/frontend-pr-loop",
       "version": "1.1.0",

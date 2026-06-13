@@ -1,0 +1,10 @@
+{
+  "name": "release",
+  "description": "Repository-native release execution and release-infrastructure remediation through gates, tags, artifacts, and publication checks.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

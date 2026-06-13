@@ -1,0 +1,38 @@
+{
+  "name": "release",
+  "version": "1.0.0",
+  "description": "Repository-native release execution and release-infrastructure remediation through gates, tags, artifacts, and publication checks.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "release",
+    "release-candidate",
+    "release-gates",
+    "versioning",
+    "ci"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Release",
+    "shortDescription": "Cut releases or build missing release infrastructure.",
+    "longDescription": "Repository-native release execution and release-infrastructure remediation. Discovers the repo's versioning, changelog, gates, candidate flow, stable promotion path, install/upgrade checks, artifacts, and publication surface before cutting or repairing releases.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Use $release to cut the next patch release end to end.",
+      "Use $release to audit this repo's release readiness and point out missing components.",
+      "Use $release to build the missing release infrastructure, verify it, and resume the release."
+    ]
+  }
+}
