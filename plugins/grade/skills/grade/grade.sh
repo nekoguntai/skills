@@ -307,9 +307,29 @@ else
   echo "(lizard not installed — complexity scoring will be judged, not measured)"
   echo "Install: pip install lizard"
 fi
-signal lizard_warning_count "$lizard_warning_count"
-signal lizard_avg_ccn        "$lizard_avg_ccn"
-signal lizard_max_ccn        "$lizard_max_ccn"
+
+# Authoritative warning count for scoring. lizard's JS/TS handling is unreliable:
+# its parser merges adjacent functions on multi-line generic signatures (summing
+# their CCN into one inflated span) and barely parses .tsx (missing most React
+# component functions). For Node/TS repos, prefer ESLint's AST-based `complexity`
+# rule (same McCabe threshold, per-function accurate) when ESLint is resolvable.
+# Falls back to the lizard count for other stacks or when ESLint is unavailable.
+complexity_warning_count="$lizard_warning_count"
+complexity_tool=lizard
+if $has_node && has_cmd npx && has_cmd jq; then
+  eslint_cx=$(timeout_wrap npx --no-install eslint . --rule '{"complexity":["error",15]}' --format json 2>/dev/null \
+    | jq '[.[].messages[]? | select(.ruleId=="complexity")] | length' 2>/dev/null || true)
+  if [ -n "$eslint_cx" ] && [ "$eslint_cx" != "null" ] && [ "$eslint_cx" -ge 0 ] 2>/dev/null; then
+    complexity_warning_count="$eslint_cx"
+    complexity_tool=eslint
+    echo "ESLint AST complexity — functions with CCN>15: $eslint_cx (lizard reported $lizard_warning_count)"
+  fi
+fi
+signal lizard_warning_count     "$lizard_warning_count"
+signal lizard_avg_ccn           "$lizard_avg_ccn"
+signal lizard_max_ccn           "$lizard_max_ccn"
+signal complexity_warning_count "$complexity_warning_count"
+signal complexity_tool          "$complexity_tool"
 signal complexity_scope project
 
 # ==============================================================================

@@ -92,9 +92,11 @@ Every mechanical scoring rule in `SKILL.md` uses one of these. Each row cites it
 |---|---|---|
 | Average CCN per function | <7 = excellent, 7–10 = good, 10–15 = moderate, >15 = poor | McCabe 1976 ("A Complexity Measure", IEEE TSE); NIST Special Publication 500-235 |
 | Max CCN in any function | <15 = OK, 15–25 = concerning, >25 = strongly suggests refactor | NIST SP 500-235 recommends ≤10; SonarQube default warning at 15 |
-| Functions exceeding CCN 15 (`lizard -w` warning count) | 0 = excellent, 1–5 = good, 6–15 = moderate, >15 = poor | SonarQube "Cognitive Complexity" rule default |
+| Functions exceeding CCN 15 (`complexity_warning_count`) | 0 = excellent, 1–5 = good, 6–15 = moderate, >15 = poor | SonarQube "Cognitive Complexity" rule default |
 
 **Tool:** [lizard](https://github.com/terryyin/lizard) — supports C/C++, Java, C#, JavaScript, TypeScript, Objective-C, Python, Ruby, PHP, Scala, Go, Lua, Rust, Swift, Fortran, Kotlin, Solidity, Erlang, Zig, Perl, GDScript (30+ languages).
+
+**JS/TS accuracy note.** lizard's JavaScript/TypeScript parser is unreliable: it merges adjacent functions on multi-line generic signatures (summing their CCN into one inflated span) and barely parses `.tsx` (missing most React component functions), so its TS warning count is wrong in *both* directions. For Node/TS repos, `grade.sh` therefore computes `complexity_warning_count` from ESLint's AST-based [`complexity`](https://eslint.org/docs/latest/rules/complexity) rule (same McCabe threshold of 15, per-function accurate) whenever ESLint is resolvable, and records the chosen tool in `complexity_tool`. lizard remains the cross-language default and the fallback when ESLint is unavailable. The raw `lizard_warning_count` is still emitted for provenance/continuity.
 
 ### Duplication — `jscpd`
 
