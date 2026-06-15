@@ -35,6 +35,19 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
 4. Determine the target branch from the remote default branch or existing PR.
 5. If already on the target branch, create a task branch before source edits
    unless the user explicitly requested direct target-branch work.
+6. Repeat this preflight before every additional implementation pass. Never
+   begin source edits for a second pass directly on the synced target branch.
+
+## Pass Budget
+
+Run one delivery pass by default, then perform the post-closeout grade check. If
+that check finds another major actionable issue, run at most one additional
+autonomous delivery pass unless the user explicitly asked for more passes or
+gave a larger budget.
+
+After the autonomous follow-up budget is exhausted, report the next selected
+finding and stop with a deferral instead of opening an unbounded sequence of
+PRs.
 
 ## Phase 1 - Grade
 
@@ -207,7 +220,9 @@ Verify:
 ## Phase 7 - Post-Closeout Grade Loop Check
 
 After merge verification and any required localhost rebuild/health checks,
-rerun the `grade` skill from the synced target branch.
+create a fresh loop-check branch or temporary worktree from the synced target
+branch, then rerun the `grade` skill there. Do not run a report-mutating
+post-closeout grade pass directly on the target branch.
 
 Use full mode unless the repository or user explicitly requires a diff-only
 follow-up. Let it update `docs/plans/codebase-health-assessment.md` and trend
@@ -216,12 +231,17 @@ history again.
 Then inspect the refreshed grade report for major actionable issues using the
 same selection rules from Phase 1:
 
-- If no major actionable issues remain, record that result and finish.
-- If major actionable issues remain and they are feasible in another bounded
-  PR, start another loop at Phase 2 using a new plan or an updated plan that
-  clearly identifies the next selected findings.
-- If major issues remain but are too broad, blocked, speculative, or require a
-  product/operational decision, record the blocker or deferral and stop instead
+- If no major actionable issues remain, record that result, capture the final
+  score/evidence for the final response, and abandon or clean up the generated
+  loop-check branch/worktree so the target branch remains clean.
+- If a major actionable issue remains, is feasible in another bounded PR, and
+  the pass budget allows another autonomous delivery, keep or rename the
+  loop-check branch as the next task branch, repeat Preflight, then start
+  another loop at Phase 2 using a new plan or an updated plan that clearly
+  identifies the next selected findings.
+- If major issues remain but are too broad, blocked, speculative, require a
+  product/operational decision, or exceed the remaining pass budget, record the
+  blocker or deferral, clean up generated loop-check changes, and stop instead
   of forcing an unsafe PR.
 
 Do not keep looping indefinitely on low-evidence recommendations or on the same
@@ -235,6 +255,8 @@ Report concisely:
 - initial and final grade evidence, including report path and score movement;
 - post-closeout grade-loop result and whether another remediation pass was
   skipped, deferred, or completed;
+- pass budget used and whether a generated loop-check branch/worktree was
+  cleaned up or converted into the next task branch;
 - remediation plan path and recursive-plan-review pass count;
 - adversarial review outcome and any fixes or deferred findings from it;
 - main implementation changes;
