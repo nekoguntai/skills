@@ -22,7 +22,7 @@
     },
     {
       "name": "bug-scrub",
-      "source": "bug-scrub",
+      "source": "./plugins/bug-scrub",
       "version": "1.0.0",
       "description": "Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases."
     },
