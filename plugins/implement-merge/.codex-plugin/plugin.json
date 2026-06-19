@@ -1,0 +1,39 @@
+{
+  "name": "implement-merge",
+  "version": "1.0.0",
+  "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "plans",
+    "implementation",
+    "pull-request",
+    "pr-delivery",
+    "merge",
+    "containers"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Implement Merge",
+    "shortDescription": "Implement plans through merged PR phases.",
+    "longDescription": "Plan-to-merge execution loop. Clears stale context, finds the newest plan, creates an explicit goal, implements bounded phases, delivers each phase with pr-delivery, and rebuilds already-running local containers after completion.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Use $implement-merge to implement and merge the most recent plan.",
+      "Find the newest plan, implement it in bounded phases, deliver each phase with $pr-delivery, then rebuild already-running containers.",
+      "Execute the latest plan through merged PRs and verify the completed goal."
+    ]
+  }
+}
