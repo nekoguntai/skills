@@ -1,13 +1,6 @@
 ---
 name: implement-merge
-description: >-
-  Implement the most recently created plan end to end, clearing stale context first,
-  creating an explicit goal for the plan, executing the plan in mergeable phases,
-  using $pr-delivery for each phase that must be committed, pushed, reviewed, and
-  merged, then rebuilding any already-running local containers after the complete
-  plan has landed. Use when the user invokes $implement-merge, asks to implement
-  and merge a plan, says to execute the latest plan through PRs, or wants an
-  autonomous plan-to-merge delivery loop.
+description: "Implement the most recently created plan end to end, clearing stale context first, creating an explicit goal for the plan, executing the plan in mergeable phases, using $pr-delivery for each phase that must be committed, pushed, reviewed, and merged, then rebuilding any already-running local containers after the complete plan has landed. Use when the user invokes $implement-merge, asks to implement and merge a plan, says to execute the latest plan through PRs, or wants an autonomous plan-to-merge delivery loop."
 ---
 
 # Implement Merge
