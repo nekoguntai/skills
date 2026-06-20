@@ -1,13 +1,14 @@
 ---
 name: grade-loop
-description: "End-to-end quality remediation loop for a repository. Use when the user invokes $grade-loop, asks Codex to run a grade/audit, turn major findings into a reviewed remediation plan, implement that plan, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun grade to decide whether another remediation pass is needed."
+description: "End-to-end quality remediation loop for a repository, with stale-context resets at startup and between remediation passes. Use when the user invokes $grade-loop, asks Codex to run a grade/audit, turn major findings into a reviewed remediation plan, implement that plan, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun grade to decide whether another remediation pass is needed."
 ---
 
 # Grade Loop
 
 Use this skill to take a repository from quality audit to merged remediation,
-green target-branch post-merge CI, and post-merge local rebuild. This is an
-execution loop, not a chat-only report.
+green target-branch post-merge CI, and post-merge local rebuild. Clear stale
+context at startup and between remediation passes. This is an execution loop,
+not a chat-only report.
 
 ## Required Skill Order
 
@@ -37,6 +38,33 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
    unless the user explicitly requested direct target-branch work.
 6. Repeat this preflight before every additional implementation pass. Never
    begin source edits for a second pass directly on the synced target branch.
+
+## Context Reset Discipline
+
+At startup and after each delivered PR before rebuild, post-closeout grading, or
+another remediation pass, clear stale context:
+
+1. Treat prior conversation analysis, branch-local observations, generated
+   reports, plan statuses, and subagent conclusions as stale unless confirmed by
+   the current request, merged code, plan files, grade reports, PR state, CI
+   output, or a fresh source read.
+2. Finish PR delivery cleanup first: verify the platform-reported merge commit
+   is reachable from the target branch, verify target-branch CI, fetch the
+   target branch, and ensure no PR monitoring or long-running command sessions
+   remain active.
+3. Re-read repository instructions, the current grade report, remediation plan,
+   dirty state, default branch HEAD, CI state, and running app/container state
+   before rebuild, loop-check grading, or another implementation pass.
+4. Classify any dirty files discovered after the merge before editing again;
+   preserve unrelated work and do not treat generated loop-check report changes
+   as canonical unless they are intentionally carried into the next pass.
+5. Start post-closeout grade checks and any follow-up pass from the refreshed
+   target-branch state, not from the merged PR branch, original grade findings,
+   or stale plan assumptions.
+
+This reset is context hygiene, not destructive cleanup: do not discard unrelated
+work, reset the worktree, restart services, or rebuild stopped containers unless
+repository instructions or the user require it.
 
 ## Pass Budget
 

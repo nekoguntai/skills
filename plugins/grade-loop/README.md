@@ -1,10 +1,11 @@
 # grade-loop
 
-End-to-end quality remediation loop for application repositories.
+End-to-end quality remediation loop for application repositories, with
+stale-context resets at startup and between remediation passes.
 
 Ships one skill:
 
-- **`/grade-loop:grade-loop`** - grade a repo, review a remediation plan, implement a bounded fix, deliver the PR, verify target-branch post-merge CI, rebuild running app containers, and rerun grade
+- **`/grade-loop:grade-loop`** - grade a repo, review a remediation plan, implement a bounded fix, deliver the PR, verify target-branch post-merge CI, rebuild running app containers, and rerun grade from refreshed target-branch state
 
 ## Install
 
@@ -23,6 +24,7 @@ Then in any repo:
 ## What it covers
 
 - Initial codebase quality grading
+- Stale-context reset at startup and between remediation passes
 - Bounded remediation planning and recursive plan review
 - Implementation with focused and proportional verification
 - PR delivery with merge ancestry and target-branch post-merge CI verification

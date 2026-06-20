@@ -1,6 +1,6 @@
 {
   "name": "rationalize-loop",
-  "description": "End-to-end convergence remediation loop that rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize.",
+  "description": "End-to-end convergence remediation loop that clears stale context, rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize.",
   "author": {
     "name": "nekoguntai"
   },

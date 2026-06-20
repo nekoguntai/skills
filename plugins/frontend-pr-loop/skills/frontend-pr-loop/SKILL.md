@@ -1,11 +1,11 @@
 ---
 name: frontend-pr-loop
-description: End-to-end autonomous frontend/UI improvement and PR delivery loop for application repositories. Use when Codex is asked to run $frontend-pr-loop, run a frontend PR loop, analyze frontend/UI usability or visual navigation, make recommendations without changes, turn recommendations into a plan, implement a UI plan, triage an open frontend PR, deliver/merge a PR, rebuild/verify running containers after merged frontend work, or rerun a frontend loop check. A bare $frontend-pr-loop is an explicit request to inspect, choose a bounded improvement, implement it, verify it, open/update a PR, monitor checks, merge safely, verify target-branch post-merge CI, rebuild already-running localhost app containers, run a bounded post-closeout frontend reinspection, and report the result unless the user says recommendations/plan/no changes only.
+description: End-to-end autonomous frontend/UI improvement and PR delivery loop for application repositories, with stale-context resets at startup and between PR passes. Use when Codex is asked to run $frontend-pr-loop, run a frontend PR loop, analyze frontend/UI usability or visual navigation, make recommendations without changes, turn recommendations into a plan, implement a UI plan, triage an open frontend PR, deliver/merge a PR, rebuild/verify running containers after merged frontend work, or rerun a frontend loop check. A bare $frontend-pr-loop is an explicit request to inspect, choose a bounded improvement, implement it, verify it, open/update a PR, monitor checks, merge safely, verify target-branch post-merge CI, rebuild already-running localhost app containers, run a bounded post-closeout frontend reinspection, and report the result unless the user says recommendations/plan/no changes only.
 ---
 
 # Frontend PR Loop
 
-Use this skill to run the recurring loop cleanly. A bare `$frontend-pr-loop` or "run the frontend PR loop" means autonomous delivery mode: inspect the frontend, choose a bounded improvement, make a short working plan, implement it, verify it, run a pre-delivery adversarial implementation review, use PR delivery through merge, verify target-branch post-merge CI, rebuild already-running localhost app containers, and rerun a bounded frontend inspection without asking the user to proceed between phases.
+Use this skill to run the recurring loop cleanly. A bare `$frontend-pr-loop` or "run the frontend PR loop" means autonomous delivery mode: inspect the frontend, choose a bounded improvement, make a short working plan, implement it, verify it, run a pre-delivery adversarial implementation review, use PR delivery through merge, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection, and clear stale context at startup and between PR passes without asking the user to proceed between phases.
 
 Only stop after analysis when the user explicitly asks for recommendations, ideas, analysis, a review, a plan, or no changes.
 
@@ -13,7 +13,7 @@ Only stop after analysis when the user explicitly asks for recommendations, idea
 
 1. Read repo instructions first: `AGENTS.md`, `CLAUDE.md`, `docs/`, and active `docs/plans/` notes when present.
 2. Classify the request:
-   - **Autonomous loop / bare invocation:** for `$frontend-pr-loop`, `/frontend-pr-loop`, "run the frontend PR loop", "frontend PR loop", or equivalent, do the full loop end to end. Do not stop at recommendations or ask "should I proceed?" Choose one coherent, bounded frontend improvement if the user did not name a specific target. Implement, verify, run a pre-delivery adversarial implementation review, commit, push, open/update the PR, monitor checks/reviews, merge safely, verify merge ancestry, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection, and report. This mode is explicit PR delivery and merge authorization for the work created by this loop only.
+   - **Autonomous loop / bare invocation:** for `$frontend-pr-loop`, `/frontend-pr-loop`, "run the frontend PR loop", "frontend PR loop", or equivalent, do the full loop end to end. Do not stop at recommendations or ask "should I proceed?" Choose one coherent, bounded frontend improvement if the user did not name a specific target. Clear stale context at startup, implement, verify, run a pre-delivery adversarial implementation review, commit, push, open/update the PR, monitor checks/reviews, merge safely, verify merge ancestry, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection from refreshed target-branch state, and report. This mode is explicit PR delivery and merge authorization for the work created by this loop only.
    - **Recommend / analyze / no changes:** inspect only and do not edit files when the user explicitly asks for recommendations, ideas, analysis, review, or no changes.
    - **Plan:** write or update a checkable plan, usually under `docs/plans/`, when the user explicitly asks for a plan; use `$recursive-plan-review` when invoked or when the user asks to make the plan complete.
    - **Implement only:** apply the reviewed plan or the user's chosen recommendation in focused slices, update the plan if scope changes, and verify. Stop after local verification unless the request also includes PR/delivery/merge language or came from autonomous loop mode.
@@ -41,9 +41,21 @@ In autonomous loop mode, run these phases without pausing for permission:
 6. Run the pre-delivery adversarial implementation review and resolve verified findings.
 7. Use `$pr-delivery` to commit only relevant files, push, open/update the PR, monitor CI/reviews, fix failures, merge safely, verify target-branch ancestry, verify target-branch post-merge CI for the merge commit, and clean up.
 8. Rebuild already-running localhost app containers after the verified merge and green target-branch CI.
-9. Run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
+9. Run the between-pass context reset, then run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
 
 Do not ask the user to choose among recommendations in autonomous mode. If several improvements are viable, pick the most defensible one and leave the rest as follow-up notes after delivery.
+
+## Context Reset Discipline
+
+At startup and after each delivered PR before post-closeout inspection or another pass, clear stale context:
+
+1. Treat prior conversation analysis, branch-local observations, screenshots, and subagent conclusions as stale unless confirmed by the current request, merged code, plan files, PR state, CI output, or a fresh source read.
+2. Finish PR delivery cleanup first: verify the platform-reported merge commit is reachable from the target branch, verify target-branch CI, fetch the target branch, and ensure no PR monitoring or long-running command sessions remain active.
+3. Re-read repository instructions, relevant plans, current frontend source, current dirty state, default branch HEAD, CI state, and running app/container state before rebuild, post-closeout inspection, or another pass.
+4. Classify any dirty files discovered after the merge before editing again; preserve unrelated work and never treat generated loop-check dirt as canonical unless it is intentionally carried into the next pass.
+5. Start post-closeout inspection and any follow-up pass from the refreshed target-branch state, not from the merged PR branch, original findings list, or unverified local assumptions.
+
+This reset is context hygiene, not destructive cleanup: do not discard unrelated work, reset the worktree, restart services, or rebuild stopped containers unless repository instructions or the user require it.
 
 ## Read-Only Frontend Analysis
 

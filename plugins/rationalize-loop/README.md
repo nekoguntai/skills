@@ -1,10 +1,11 @@
 # rationalize-loop
 
-End-to-end convergence remediation loop for application repositories.
+End-to-end convergence remediation loop for application repositories, with
+stale-context resets at startup and between convergence passes.
 
 Ships one skill:
 
-- **`/rationalize-loop:rationalize-loop`** - rationalize divergent paths, review a convergence plan, implement a bounded phase, deliver the PR, verify target-branch post-merge CI, rebuild running app containers, and rerun rationalize
+- **`/rationalize-loop:rationalize-loop`** - rationalize divergent paths, review a convergence plan, implement a bounded phase, deliver the PR, verify target-branch post-merge CI, rebuild running app containers, and rerun rationalize from refreshed target-branch state
 
 ## Install
 
@@ -23,6 +24,7 @@ Then in any repo:
 ## What it covers
 
 - Divergence inventory and canonical path decisions
+- Stale-context reset at startup and between convergence passes
 - Bounded convergence planning and recursive plan review
 - Implementation with compatibility and drift-test discipline
 - PR delivery with merge ancestry and target-branch post-merge CI verification

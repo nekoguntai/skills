@@ -54,19 +54,19 @@
       "name": "frontend-pr-loop",
       "source": "./plugins/frontend-pr-loop",
       "version": "1.1.0",
-      "description": "Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, delivers it through a merged PR, verifies target-branch post-merge CI, rebuilds running app containers, and rechecks."
+      "description": "Autonomous frontend/UI improvement loop that clears stale context, chooses a bounded change, verifies it, delivers it through a merged PR, verifies target-branch post-merge CI, rebuilds running app containers, and rechecks."
     },
     {
       "name": "grade-loop",
       "source": "./plugins/grade-loop",
       "version": "1.0.0",
-      "description": "End-to-end quality remediation loop that grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade."
+      "description": "End-to-end quality remediation loop that clears stale context, grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade."
     },
     {
       "name": "rationalize-loop",
       "source": "./plugins/rationalize-loop",
       "version": "1.0.0",
-      "description": "End-to-end convergence remediation loop that rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize."
+      "description": "End-to-end convergence remediation loop that clears stale context, rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize."
     },
     {
       "name": "implement-merge",

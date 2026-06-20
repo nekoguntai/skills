@@ -1,6 +1,6 @@
 {
   "name": "frontend-pr-loop",
-  "description": "Autonomous frontend/UI improvement loop that chooses a bounded change, verifies it, and delivers it through a merged PR.",
+  "description": "Autonomous frontend/UI improvement loop that clears stale context, chooses a bounded change, verifies it, and delivers it through a merged PR.",
   "author": {
     "name": "nekoguntai"
   },

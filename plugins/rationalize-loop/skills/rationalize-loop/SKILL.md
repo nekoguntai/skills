@@ -1,13 +1,14 @@
 ---
 name: rationalize-loop
-description: End-to-end convergence remediation loop for a repository. Use when the user invokes $rationalize-loop, asks Codex to identify divergent paths, choose or recommend canonical paths, review a convergence plan, implement a bounded converge/remove phase, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun rationalize to decide whether another convergence pass is needed.
+description: End-to-end convergence remediation loop for a repository, with stale-context resets at startup and between convergence passes. Use when the user invokes $rationalize-loop, asks Codex to identify divergent paths, choose or recommend canonical paths, review a convergence plan, implement a bounded converge/remove phase, deliver and merge the PR, verify target-branch post-merge CI, rebuild any already-running localhost app containers, and rerun rationalize to decide whether another convergence pass is needed.
 ---
 
 # Rationalize Loop
 
 Use this skill to take a repository from divergence inventory to merged
 convergence remediation, green target-branch post-merge CI, and post-closeout
-loop checking. This is an execution loop, not a chat-only report.
+loop checking. Clear stale context at startup and between convergence passes.
+This is an execution loop, not a chat-only report.
 
 ## Required Skill Order
 
@@ -41,6 +42,33 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
    unless the user explicitly requested direct target-branch work.
 6. Repeat this preflight before every additional implementation pass. Never
    begin source edits for a second pass directly on the synced target branch.
+
+## Context Reset Discipline
+
+At startup and after each delivered PR before rebuild, post-closeout
+rationalizing, or another convergence pass, clear stale context:
+
+1. Treat prior conversation analysis, branch-local observations, generated
+   plans, canonical-path assumptions, and subagent conclusions as stale unless
+   confirmed by the current request, merged code, rationalization plans, PR
+   state, CI output, or a fresh source read.
+2. Finish PR delivery cleanup first: verify the platform-reported merge commit
+   is reachable from the target branch, verify target-branch CI, fetch the
+   target branch, and ensure no PR monitoring or long-running command sessions
+   remain active.
+3. Re-read repository instructions, the current rationalization plan, dirty
+   state, default branch HEAD, CI state, and running app/container state before
+   rebuild, loop-check rationalizing, or another implementation pass.
+4. Classify any dirty files discovered after the merge before editing again;
+   preserve unrelated work and do not treat generated loop-check plan changes
+   as canonical unless they are intentionally carried into the next pass.
+5. Start post-closeout rationalize checks and any follow-up pass from the
+   refreshed target-branch state, not from the merged PR branch, original
+   divergence inventory, or stale canonical-path assumptions.
+
+This reset is context hygiene, not destructive cleanup: do not discard unrelated
+work, reset the worktree, restart services, or rebuild stopped containers unless
+repository instructions or the user require it.
 
 ## Pass Budget
 
