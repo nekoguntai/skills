@@ -1,8 +1,6 @@
 ---
 name: rationalize
-description: Identify divergent implementation paths, choose or recommend canonical paths, and produce a convergence plan for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, or legacy/current code paths. Use when the user asks to rationalize, converge, consolidate, de-duplicate, retire old paths, compare divergent paths, or turn /grade divergence findings into an actionable cleanup plan.
-disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
+description: Identify divergent implementation paths with fresh repo-context checks, choose or recommend canonical paths, and produce a convergence plan for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, or legacy/current code paths. Use when the user asks to rationalize, converge, consolidate, de-duplicate, retire old paths, compare divergent paths, or turn /grade divergence findings into an actionable cleanup plan.
 ---
 
 # Rationalize
@@ -20,9 +18,31 @@ Use this for:
 - old/current naming or compatibility paths that may outlive their purpose;
 - feature flags, fallback paths, provider adapters, or platform splits whose ownership is unclear;
 - test suites that prove the same behavior through separate helpers or fixtures;
-- follow-up planning from `/grade:grade` `Divergent Paths` findings.
+- follow-up planning from `/grade` `Divergent Paths` findings.
 
-Do not use this to replace `/grade:grade`. `/grade:grade` scores risk. `rationalize` decides what should converge and how.
+Do not use this to replace `/grade`. `/grade` scores risk. `rationalize` decides what should converge and how.
+
+## Context Freshness
+
+Before inventorying divergence, making canonical-path decisions, or writing the
+plan, refresh the repository context:
+
+1. Establish the repo root, requested scope, branch, HEAD, and dirty state from
+   disk. Do not rely on earlier conversation state.
+2. Re-read repo instructions, existing rationalization plans, recent grade
+   reports, and the source paths under review. Treat previous findings and
+   subagent output as leads until confirmed by current artifacts.
+3. If HEAD, dirty files, requested scope, or diff base changes after an
+   interruption or long-running search, rerun the affected searches, caller
+   checks, and behavior comparisons before deciding a canonical path.
+4. Preserve unrelated dirty work and existing plan notes. Keep older decisions
+   only when current source evidence still supports them.
+5. Before the final plan write, re-check `git status` and HEAD. If provenance
+   changed, refresh the plan evidence or stop and rerun instead of writing stale
+   convergence decisions.
+
+This is context hygiene, not destructive cleanup: do not reset the worktree,
+discard changes, or remove prior decisions merely because they are inconvenient.
 
 ## Output
 
@@ -66,7 +86,7 @@ Scope: <repo-wide | subsystem | diff | user-specified scope>
 
 1. Establish the repo root with `git rev-parse --show-toplevel` when possible.
 2. Check `git status --short` before editing. Do not revert unrelated user changes.
-3. Read relevant project instructions, existing plans, and recent `/grade:grade` reports if present.
+3. Read relevant project instructions, existing plans, and recent `/grade` reports if present.
 4. Define the scope from the user's request. If the request is broad, inventory the top-level domains first and then focus on the highest-risk areas.
 5. Search for candidate divergence with `rg` and native project structure. Start from names the user mentioned, then inspect adjacent routes, types, schemas, clients, tests, docs, and feature flags.
 6. For each candidate, compare behavior, ownership boundary, callers, tests, compatibility requirements, and failure modes.

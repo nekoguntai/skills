@@ -1,7 +1,8 @@
 # bug-scrub
 
-Evidence-driven bug scrub for repositories and diffs. The skill focuses on
-high-confidence correctness defects, not style issues or broad refactors.
+Evidence-driven bug scrub for repositories and diffs. The skill refreshes repo
+context before accepting findings or fixes, and focuses on high-confidence
+correctness defects rather than style issues or broad refactors.
 
 Ships one skill:
 
@@ -47,6 +48,7 @@ Then in any compatible plugin session:
 ## What it covers
 
 - Trust boundaries, auth, tenant scope, and validation bugs
+- Fresh repo/diff context checks before accepting findings or fixes
 - Persistence, transactions, migrations, and data integrity bugs
 - API contract, date/time, money, pagination, and schema drift bugs
 - Async jobs, retries, workers, webhooks, and lifecycle races

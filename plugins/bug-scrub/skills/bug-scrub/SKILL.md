@@ -1,6 +1,6 @@
 ---
 name: bug-scrub
-description: Evidence-driven bug scrub for a repository or diff. Use when the user asks Codex to hunt for bugs, scrub a codebase for defects, find high-confidence correctness issues, inspect a large codebase for likely failures, or produce a bug-focused triage report before fixing selected issues.
+description: Evidence-driven bug scrub for a repository or diff, with fresh repo-context checks before accepting findings or fixing selected issues. Use when the user asks Codex to hunt for bugs, scrub a codebase for defects, find high-confidence correctness issues, inspect a large codebase for likely failures, or produce a bug-focused triage report before fixing selected issues.
 ---
 
 # Bug Scrub
@@ -50,6 +50,27 @@ or open a PR.
    repo's test-isolation docs before running them.
 5. Determine analysis scope: whole repo, diff, named subsystem, or suspected
    bug class.
+
+## Context Freshness
+
+Before accepting findings, writing a report, or switching from analysis to fix
+or delivery mode, refresh the repository context:
+
+1. Re-run preflight for the current branch, HEAD, dirty state, and requested
+   scope. For diff scrubs, re-resolve the base ref or PR target branch.
+2. Treat old candidate findings, stale diffs, screenshots, and subagent output
+   as leads until reconfirmed from current source, callers, tests, or logs.
+3. If HEAD, dirty files, base ref, or requested scope changes after an
+   interruption or long-running analysis, rerun the affected inventory and
+   changed-file/caller checks before reporting.
+4. Preserve unrelated dirty work. Read-only mode must not edit files; fix mode
+   must re-read each selected finding path before changing code.
+5. Before final output, re-check `git status` and HEAD. If provenance changed,
+   refresh the finding evidence or clearly report that the scrub stopped rather
+   than mixing old and new states.
+
+This is context hygiene, not destructive cleanup: do not reset the worktree,
+discard changes, or suppress findings because local state moved.
 
 ## Baseline Inventory
 

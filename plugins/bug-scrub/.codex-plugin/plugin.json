@@ -1,7 +1,7 @@
 {
   "name": "bug-scrub",
   "version": "1.0.0",
-  "description": "Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases.",
+  "description": "Evidence-driven bug scrub for repositories and diffs, with fresh repo-context checks and optional bounded subagent analysis for large codebases.",
   "author": {
     "name": "nekoguntai",
     "url": "https://github.com/nekoguntai"
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Bug Scrub",
     "shortDescription": "Find high-confidence bugs in repos and diffs.",
-    "longDescription": "Evidence-driven bug scrub for repositories and diffs. Focuses on real correctness defects, supports bounded subagent sharding for large codebases, and keeps findings tied to concrete failure paths and verification.",
+    "longDescription": "Evidence-driven bug scrub for repositories and diffs. Refreshes repo context before accepting findings or fixes, focuses on real correctness defects, supports bounded subagent sharding for large codebases, and keeps findings tied to concrete failure paths and verification.",
     "developerName": "nekoguntai",
     "category": "Developer Tools",
     "capabilities": [

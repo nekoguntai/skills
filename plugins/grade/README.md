@@ -1,6 +1,6 @@
 # grade
 
-Strict, evidence-driven software quality audit for any repository. Produces a defensible multi-domain quality score anchored to **ISO/IEC 25010** — not an LLM opinion.
+Strict, evidence-driven software quality audit for any repository. Produces a defensible multi-domain quality score anchored to **ISO/IEC 25010** with fresh repo-context checks before scoring and report writes.
 
 Ships two skills:
 
@@ -22,6 +22,7 @@ The core principles:
 5. **Work across languages** via multi-language tools.
 6. **Acknowledge what static analysis can't see.** DORA/SRE metrics need runtime data; this tool scores their *enablers* (CI, Dockerfile, health endpoints) and labels the result "DORA-readiness".
 7. **Flag divergent paths without taking over convergence planning.** `/grade:grade` reports duplicate active workflows or contracts as Maintainability evidence and points deeper cleanup to `/rationalize:rationalize`.
+8. **Refresh context before writing.** Re-check branch, HEAD, dirty state, report history, and diff scope before scoring or updating the report.
 
 ## Scoring breakdown
 

@@ -1,6 +1,6 @@
 {
   "name": "grade",
-  "description": "Strict, evidence-driven software quality audit for any repository. Multi-domain scoring anchored to ISO/IEC 25010, McCabe, NIST, SonarQube, and OWASP. Supports full and diff modes, divergent-path findings, trend tracking across runs, and multi-language projects (Node, Python, Go, Rust, Java, Kotlin, Ruby, PHP, Elixir, Swift, .NET, Scala).",
+  "description": "Strict, evidence-driven software quality audit for any repository, with fresh repo-context checks before scoring and report writes. Multi-domain scoring anchored to ISO/IEC 25010, McCabe, NIST, SonarQube, and OWASP. Supports full and diff modes, divergent-path findings, trend tracking across runs, and multi-language projects (Node, Python, Go, Rust, Java, Kotlin, Ruby, PHP, Elixir, Swift, .NET, Scala).",
   "author": {
     "name": "nekoguntai"
   },

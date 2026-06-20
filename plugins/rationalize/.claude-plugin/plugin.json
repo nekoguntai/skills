@@ -1,6 +1,6 @@
 {
   "name": "rationalize",
-  "description": "Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths.",
+  "description": "Divergent-path analysis and convergence planning with fresh repo-context checks for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths.",
   "author": {
     "name": "nekoguntai"
   },

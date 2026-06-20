@@ -1,6 +1,6 @@
 # rationalize
 
-Divergent-path analysis and convergence planning for repositories with duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, or legacy/current code paths.
+Divergent-path analysis and convergence planning with fresh repo-context checks for repositories with duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, or legacy/current code paths.
 
 Ships one skill:
 
@@ -23,6 +23,7 @@ Then in any repo:
 ## What it covers
 
 - Duplicate contract and schema inventory
+- Fresh repo-context checks before decisions and plan writes
 - Parallel route, service, hook, client, worker, or command-handler comparison
 - Legacy/current path and compatibility-shim review
 - Canonical path decisions with compatibility notes

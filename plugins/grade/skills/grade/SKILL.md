@@ -1,224 +1,201 @@
 ---
 name: grade
-description: Strict, evidence-driven software quality audit of the current repository. Produces a scored multi-domain quality report anchored to ISO/IEC 25010, with mechanical tool-backed signals and ISO-anchored LLM judgment where no tool can reliably measure. Supports full and diff modes, trend tracking, and multi-language projects.
-disable-model-invocation: true
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent
+description: Strict, evidence-driven software quality audit of the current repository or a diff, with fresh repo-context checks before scoring and report writes. Produces or updates docs/plans/codebase-health-assessment.md with a scored ISO/IEC 25010-aligned report, mechanical tool-backed signals, hard-fail blockers, trend tracking, and actionable improvements. Use when the user types "$grade" or "/grade", asks to grade/audit/assess codebase health, compare diff quality, or create a codebase quality plan.
 ---
 
-You are a strict, evidence-driven software quality auditor.
+# Grade
 
-Your job is to evaluate the entire repository (or a diff against a base ref) and produce an objective, multi-domain quality report with scores, blockers, and actionable improvements — **anchored to real industry standards** (ISO/IEC 25010, McCabe, NIST, SonarQube, OWASP, Google SRE).
+Use this skill to produce a defensible software quality audit. Prefer evidence and repeatable signals over subjective impressions.
 
----
+Do not stop at a chat-only summary unless the user explicitly says not to write files. In a repository, write or update `docs/plans/codebase-health-assessment.md`. If `docs/plans/` does not exist, create it. Preserve useful prior status notes when updating an existing assessment.
 
-# 🎯 SPIRIT
+## Bundled Resources
 
-`/grade` is an **audit tool, not an LLM opinion generator.** Read `${CLAUDE_SKILL_DIR}/standards.md` before your first run in any session — it contains the full philosophy, the ISO 25010 mapping, and every threshold's citation. Operate by its rules:
+Resolve these paths relative to this `SKILL.md` directory:
 
-1. **Anchor to real standards.** Every mechanical threshold traces back to a source documented in `standards.md`. No made-up numbers.
-2. **Measure what can be measured. Judge what can't.** Real tools (`lizard`, `jscpd`, `gitleaks`, native test/lint/audit runners) get thresholds. No-tool criteria get LLM judgment anchored to an ISO 25010 sub-characteristic — never freeform vibes.
-3. **Never fake objectivity with a weak grep proxy.** A score is either measured or judged. If you don't have evidence, emit `unknown` and lower confidence.
-4. **Cite everything.** Every score must cite either `tool + threshold + exit status` or `ISO 25010 sub-characteristic + inspection target + evidence`.
-5. **Be actionable.** Every low score must tell the user exactly what to fix: specific file, specific threshold missed.
-6. **Work across languages** via multi-language tools, not per-language regex.
-7. **Acknowledge what static analysis can't see.** DORA/SRE metrics need runtime data. Score their *enablers* instead (CI, deploy artifacts, health endpoints), labeled "DORA-readiness".
-8. **Flag divergent paths without turning the audit into a migration plan.** Parallel active implementations of the same workflow or contract are Maintainability evidence. `/grade` reports the risk and recommends rationalization when needed; canonical-path decisions and cleanup sequencing belong in `/rationalize:rationalize`.
+- `standards.md`: source of truth for the rubric, standards mapping, and threshold citations. Read it once per session before auditing.
+- `grade.sh`: project-wide signal collector for tests, lint, typecheck, coverage, vulnerabilities, secrets, complexity, duplication, file size, operational enablers, and heuristic evidence.
+- `diff_scan.sh`: diff-scoped signal collector for changed files.
+- `heuristics.sh`: evidence hints for judged criteria; these are not direct mechanical scores.
+- `trend.sh`: grade history and quality-delta helper. By default it writes repo-local history under `docs/plans/grade-history/`; `GRADE_HISTORY_DIR` can override this.
 
----
+Run bundled scripts with `bash <skill-dir>/<script>` if executable bits are unavailable.
 
-# 🎯 GOAL
+## Context Freshness
 
-Produce a **Software Quality Report** with:
+Before collecting signals, judging evidence, or writing the report, refresh the
+repository context:
 
-- Overall score (0–100) with letter grade and confidence level
-- **Mode**: full or diff (with base ref)
-- Hard-fail blockers (citing specific signals)
-- Per-domain scores (7 domains, ISO 25010-aligned)
-- Evidence table (mechanical measurements + tool provenance)
-- Judged findings (each citing ISO sub-characteristic + inspection target + justification)
-- Divergent implementation path findings and disposition
-- Trend vs previous run
-- Top risks
-- Fastest improvements
+1. Establish the repo root, current request mode, base ref, branch, HEAD, and
+   dirty state from disk. Do not rely on earlier conversation state.
+2. Re-read repo instructions, the current report/history entry, relevant plans,
+   and `standards.md`. Treat previous scores, old reports, and subagent output
+   as leads until confirmed by current artifacts.
+3. If HEAD, dirty files, base ref, or diff scope changes after an interruption
+   or long-running command, rerun the affected signal collectors and judged
+   inspections before scoring.
+4. Preserve unrelated dirty work. Full mode includes the current working tree;
+   diff mode must record the resolved base and changed-file scope explicitly.
+5. Before the final report write, re-check `git status` and HEAD. If provenance
+   changed, refresh it or stop and rerun instead of writing a stale assessment.
 
----
+This is context hygiene, not destructive cleanup: do not reset the worktree,
+discard changes, or rewrite report history to hide older runs.
 
-# 🧩 ARGUMENTS
+## Spirit
+
+`$grade` is an audit tool, not an opinion generator.
+
+1. Anchor to real standards. Every mechanical threshold must trace back to `standards.md`.
+2. Measure what can be measured. Judge what cannot be measured, but anchor each judgment to an ISO/IEC 25010 sub-characteristic and inspected evidence.
+3. Never fake objectivity with weak grep proxies. A score is measured, judged, or unknown.
+4. Cite every score with either `tool + threshold + exit status` or `ISO sub-characteristic + inspection target + evidence`.
+5. Make low scores actionable with specific files, functions, thresholds, or missing artifacts.
+6. Work across languages via native project tools and multi-language tools such as `lizard`, `jscpd`, and `gitleaks`.
+7. Label runtime-only claims honestly. Static analysis can score DORA/SRE enablers, not live production latency, MTTR, or change-failure rate.
+8. Flag divergent implementation paths as audit findings, but do not turn `/grade` into a cleanup plan. Recommend the `rationalize` skill when convergence needs decisions or sequencing.
+9. Detect improvements explicitly. Report score movement, threshold crossings, within-bucket signal deltas, newly measured evidence, and lost evidence separately so real cleanup is visible even when the letter grade does not change.
+
+## Arguments
 
 | Invocation | Mode | Scope |
-|---|---|---|
-| `/grade` | **full** (default) | Audits entire repo at HEAD. |
-| `/grade --diff` | **diff** | Audits only files changed between HEAD and default base. |
-| `/grade --diff <ref>` | **diff** | Audits only files changed vs `<ref>` (e.g. `origin/main`, `HEAD~5`). |
+| --- | --- | --- |
+| `$grade` or `/grade` | full | Audit the repository at HEAD, including the current working tree. |
+| `$grade --diff` or `/grade --diff` | diff | Audit files changed between HEAD and the default base ref. |
+| `$grade --diff <ref>` or `/grade --diff <ref>` | diff | Audit files changed against `<ref>`, such as `origin/main` or `HEAD~5`. |
 
-**Default base ref resolution** for `--diff` with no ref:
-1. Try `git rev-parse --verify main` → use if it exists
-2. Else `git rev-parse --verify master` → use
-3. Else abort: "Could not resolve a default base ref. Pass one explicitly."
+Default base ref resolution for `--diff` with no ref:
 
-Record the resolved base ref in `base_ref` and mention it in the report header.
+1. Try `git rev-parse --verify main`.
+2. Else try `git rev-parse --verify master`.
+3. Else abort with: `Could not resolve a default base ref. Pass one explicitly.`
 
----
+Record the resolved base ref in the report.
 
-# 🧱 DOMAINS — ISO 25010 aligned
+## Domains
 
-| Domain | Weight | ISO 25010 Characteristic |
-|---|---|---|
-| 1. Correctness | 20 | Functional Suitability (Completeness, Correctness, Appropriateness) |
-| 2. Reliability | 15 | Reliability (Maturity, Availability, Fault Tolerance, Recoverability) |
-| 3. Maintainability | 15 | Maintainability (Modularity, Reusability, Analyzability, Modifiability, Testability) |
-| 4. Security | 15 | Security (Confidentiality, Integrity, Non-repudiation, Authenticity) |
-| 5. Performance | 10 | Performance Efficiency (Time Behaviour, Resource Utilization, Capacity) |
-| 6. Test Quality | 15 | cross-cutting — Functional Suitability + Testability |
-| 7. Operational Readiness | 10 | Reliability/Availability + Portability + Compatibility |
+| Domain | Weight | ISO/IEC 25010 alignment |
+| --- | ---: | --- |
+| Correctness | 20 | Functional Suitability: completeness, correctness, appropriateness |
+| Reliability | 15 | Reliability: maturity, availability, fault tolerance, recoverability |
+| Maintainability | 15 | Maintainability: modularity, reusability, analyzability, modifiability, testability |
+| Security | 15 | Security: confidentiality, integrity, non-repudiation, authenticity |
+| Performance | 10 | Performance Efficiency: time behavior, resource utilization, capacity |
+| Test Quality | 15 | Functional Suitability plus Maintainability/Testability |
+| Operational Readiness | 10 | Reliability/Availability plus Portability and Compatibility enablers |
 
-Total = 100.
+Total: 100 points.
 
----
+## Hard-Fail Gates
 
-# 🚨 HARD-FAIL GATES
-
-Cap the overall grade at **D (≤69)** and list blockers FIRST when any of these concrete signals fire. Every blocker in the output must cite the exact signal value that triggered it.
+Cap the overall grade at **D (<=69)** and list blockers first when any concrete gate fires:
 
 | Gate | Trigger | Source |
-|---|---|---|
+| --- | --- | --- |
 | Tests broken | `tests=fail` | ISO 25010 Functional Correctness |
 | Typecheck broken | `typecheck=fail` | ISO 25010 Functional Correctness |
-| Hardcoded secrets | `secrets ≥ 1` (gitleaks or regex) | OWASP A07:2021, CWE-798 |
-| High/critical vulns | `security_high ≥ 3` | OWASP A06:2021, CVSS ≥7.0 |
+| Hardcoded secrets | `secrets >= 1` | OWASP A07:2021, CWE-798 |
+| High/critical vulnerabilities | `security_high >= 3` | OWASP A06:2021, CVSS >=7.0 |
 
-**Explicitly NOT hard-fails** (track as risks, not blockers):
-- `tests=timeout` / `typecheck=timeout` — inconclusive; note in Evidence and Top Risks
-- `tests=missing` / `typecheck=missing` — scored 0 but not a gate; the stack may genuinely lack one
-- Aspirational concerns ("no prod tests", "unsafe admin access") — note in Top Risks with concrete evidence or not at all
+Do not treat `timeout`, `missing`, or aspirational concerns as hard-fail gates. Score or report them as risks with confidence impact.
 
----
+## Scoring Rules
 
-# 📊 SCORING RULES
+Rows marked **[M]** are mechanical: apply the threshold directly to parsed signals. Rows marked **[J]** are judged: inspect targeted files and choose Low / Medium / High with a one-sentence ISO-anchored justification.
 
-Each row below is either **[M] Mechanical** (tool-backed threshold → score) or **[J] Judged** (LLM decides based on ISO sub-characteristic + evidence + inspection).
+For judged rows:
 
-**For [M] rows:** apply the threshold mechanically. Same inputs = same score. If a signal is `unknown` (tool not installed, no data), award the "Unknown" column and flag the absence in Missing.
+- Read the evidence signals first.
+- Inspect the file paths indicated by the evidence and by `rg` searches; cite concrete paths.
+- Use direct inspection in Codex by default. Use subagents only when the user explicitly requests delegated or parallel analysis.
+- If evidence signals are within +/-10% of the previous run and no material code change is detected, inherit the previous judged score unless specific new evidence justifies a change.
 
-**For [J] rows:** pick one of three bands — **Low / Medium / High** — each mapping to a fixed point value. The LLM must:
-1. Cite the ISO 25010 sub-characteristic being evaluated
-2. Read the numeric evidence signal(s) listed
-3. Use the `Explore` subagent to inspect the specific sites (file paths) the evidence points to — **always required** for judged criteria worth ≥4 points
-4. Pick Low/Medium/High and write a one-sentence justification citing specific file paths
-5. **Anchor to previous entry**: if the evidence signals are within ±10% of the prior run's and no material code change is detected, inherit the prior judged score unless there's a specific reason to deviate
-
----
-
-## 1. Correctness (20) — ISO 25010: Functional Suitability
+### 1. Correctness (20)
 
 | # | Criterion | Kind | Signal / Source | Scoring |
-|---|---|---|---|---|
-| 1.1 | Tests pass | **[M]** | `tests` (native test runner) | `pass`→+6; `timeout`→+2; `fail`→0; `missing`→0 |
-| 1.2 | Typecheck clean | **[M]** | `typecheck` (native typechecker) | `pass`→+4; `timeout`→+2; `fail ≤5 errors`→+2; `fail >5`→0; `missing`→+2 (stack has no typechecker) |
-| 1.3 | Lint clean | **[M]** | `lint` (native linter) | `pass`→+3; `timeout`→+1; `fail ≤10`→+1; `fail >10`→0; `missing`→+1 |
-| 1.4 | Suppression density | **[J]** | `suppression_count` per kloc (evidence); Functional Appropriateness | Inspect top 5 suppression sites via Explore. **Low→0** (>30/kloc or clustered in critical paths), **Medium→+2** (10-30/kloc, non-critical), **High→+4** (<10/kloc, justified). |
-| 1.5 | Functional completeness | **[J]** | README TODOs, `test_file_count`; Functional Completeness | Spot-check README + test directory. **Low→0** (large unfinished scope), **Medium→+1** (some gaps), **High→+3** (feature-complete against README). |
+| --- | --- | --- | --- | --- |
+| 1.1 | Tests pass | [M] | `tests` from native test runner | `pass` +6; `timeout` +2; `fail` 0; `missing` 0 |
+| 1.2 | Typecheck clean | [M] | `typecheck` from native typechecker | `pass` +4; `timeout` +2; `fail` with <=5 evident errors +2; `fail` with >5 errors 0; `missing` +2 |
+| 1.3 | Lint clean | [M] | `lint` from native linter | `pass` +3; `timeout` +1; `fail` with <=10 evident issues +1; `fail` with >10 issues 0; `missing` +1 |
+| 1.4 | Suppression density | [J] | `suppression_count`; Functional Appropriateness | Low 0 (>30/KLOC or critical-path clusters); Medium +2 (10-30/KLOC, non-critical); High +4 (<10/KLOC and justified) |
+| 1.5 | Functional completeness | [J] | README/TODOs and `test_file_count`; Functional Completeness | Low 0 (large unfinished scope); Medium +1 (some gaps); High +3 (feature-complete against stated scope) |
 
----
+### 2. Reliability (15)
 
-## 2. Reliability (15) — ISO 25010: Reliability
+All rows are judged because static tools do not measure runtime reliability.
 
-**All rows are [J]** — there is no static tool that measures runtime reliability. The LLM inspects code for resilience patterns anchored to the ISO sub-characteristic definitions.
+| # | Criterion | ISO sub-characteristic | Evidence | Scoring |
+| --- | --- | --- | --- | --- |
+| 2.1 | Error handling quality | Fault Tolerance | `blocking_io_count`, external-call sites | Low 0 (silent/bare failures); Medium +3 (partial handling); High +6 (consistent typed/contextual handling) |
+| 2.2 | Timeouts and retries | Availability, Fault Tolerance | `timeout_retry_count`, external-call sites | Low 0 (none where needed); Medium +2 (some coverage); High +4 (consistent on external I/O) |
+| 2.3 | Crash-prone paths | Fault Tolerance | production use of panic/unwrap/assert/null-deref patterns | Low 0 (many in prod paths); Medium +2 (few/cold init only); High +5 (none or test/example only) |
 
-| # | Criterion | ISO sub | Evidence | Inspection & scoring |
-|---|---|---|---|---|
-| 2.1 | Error handling quality | Fault Tolerance — "degree to which a system operates as intended despite faults" | `blocking_io_count`, any external-call sites found via Explore | Use Explore on external call sites. Are errors handled meaningfully (typed, logged, surfaced) or swallowed/ignored? **Low→0** (bare except/catch, silent failures), **Medium→+3** (partial handling), **High→+6** (consistent, typed, contextual). |
-| 2.2 | Timeouts & retries on external calls | Availability, Fault Tolerance | `timeout_retry_count` | Inspect external-call sites. Are timeouts and retries applied where they matter? **Low→0** (none, or in wrong places), **Medium→+2** (some), **High→+4** (consistent on all external I/O). |
-| 2.3 | No crash-prone paths | Fault Tolerance | LLM inspection (unwrap/panic/assert/null-deref in prod code, separated from tests) | Scope inspection to non-test code paths. **Low→0** (many in prod paths), **Medium→+2** (a few, in cold init), **High→+5** (none or only in tests/examples). |
-
----
-
-## 3. Maintainability (15) — ISO 25010: Maintainability
+### 3. Maintainability (15)
 
 | # | Criterion | Kind | Signal / Source | Scoring |
-|---|---|---|---|---|
-| 3.1 | Cyclomatic complexity | **[M]** | `complexity_warning_count` (functions with CCN>15 per McCabe/NIST/SonarQube; `complexity_tool` records eslint or lizard) | `0`→+5; `1-5`→+3; `6-15`→+1; `>15`→0; `unknown`→+2 (no complexity tool; downgrade confidence) |
-| 3.2 | Duplication | **[M]** | `duplication_pct` (jscpd vs SonarQube 3% default) | `<3%`→+3; `3-5%`→+1; `>5%`→0; `unknown`→+1 (jscpd not installed) |
-| 3.3 | No god files | **[M]** | `largest_file_lines` | `<500`→+2; `500-1000`→+1; `>1000`→0; `unknown`→+1 |
-| 3.4 | Architecture clarity and path convergence | **[J]** | directory layout plus divergent-path scan; Modularity / Reusability / Analyzability | Inspect top-level layout and likely duplicate active paths via Explore. **Low→0** (flat/tangled or high-risk duplicate active paths), **Medium→+2** (some structure or known divergences with guardrails), **High→+3** (clear separation, no cycles, no unjustified parallel implementations). |
-| 3.5 | Readability / naming | **[J]** | spot-check 3-5 random source files; Analyzability | **Low→0** (cryptic, inconsistent), **Medium→+1** (mixed), **High→+2** (consistent, self-documenting). |
+| --- | --- | --- | --- | --- |
+| 3.1 | Cyclomatic complexity | [M] | `lizard_warning_count` for functions with CCN >15 | `0` +5; `1-5` +3; `6-15` +1; `>15` 0; `unknown` +2 |
+| 3.2 | Duplication | [M] | `duplication_pct` from `jscpd` | `<3%` +3; `3-5%` +1; `>5%` 0; `unknown` +1 |
+| 3.3 | No god files | [M] | `largest_file_lines` | `<500` +2; `500-1000` +1; `>1000` 0; `unknown` +1 |
+| 3.4 | Architecture clarity and path convergence | [J] | top-level layout plus divergent-path scan; Modularity/Reusability/Analyzability | Low 0 (flat/tangled or high-risk duplicate active paths); Medium +2 (some structure or known divergences with guardrails); High +3 (clear boundaries, no obvious cycles, no unjustified parallel implementations) |
+| 3.5 | Readability/naming | [J] | spot-check 3-5 source files; Analyzability | Low 0 (cryptic/inconsistent); Medium +1 (mixed); High +2 (consistent and self-explanatory) |
 
----
-
-## 4. Security (15) — ISO 25010: Security
+### 4. Security (15)
 
 | # | Criterion | Kind | Signal / Source | Scoring |
-|---|---|---|---|---|
-| 4.1 | Dependency vulnerabilities | **[M]** | `security_high` (native audit tool, CVSS ≥7.0) | `0`→+5; `1-2`→+2; `≥3`→**0 AND HARD-FAIL**; `unknown`→+2 (flag as missing) |
-| 4.2 | No hardcoded secrets | **[M]** | `secrets` (gitleaks preferred, regex fallback) | `0`→+4; `≥1`→**0 AND HARD-FAIL**; `unknown`→+2 |
-| 4.3 | Input validation quality | **[J]** | `validation_lib_present` + inspection of HTTP handlers / entry points; Integrity | Use Explore on request handlers, CLI arg parsing, file parsers. **Low→0** (raw user input passed to logic), **Medium→+1** (validation library present but inconsistently used), **High→+3** (validation at every trust boundary). |
-| 4.4 | Safe system/API usage | **[J]** | LLM inspection for `eval`, `innerHTML=`, `dangerouslySetInnerHTML`, `shell=True`, `os.system`, string-built SQL; Integrity | **Low→0** (dangerous patterns with user input), **Medium→+1** (some minor risks, non-user-facing), **High→+3** (clean). |
+| --- | --- | --- | --- | --- |
+| 4.1 | Dependency vulnerabilities | [M] | `security_high` from native audit tool | `0` +5; `1-2` +2; `>=3` 0 and hard-fail; `unknown` +2 |
+| 4.2 | No hardcoded secrets | [M] | `secrets` from `gitleaks` or fallback | `0` +4; `>=1` 0 and hard-fail; `unknown` +2 |
+| 4.3 | Input validation quality | [J] | `validation_lib_present`, handlers/entry points; Integrity | Low 0 (raw input reaches logic); Medium +1 (inconsistent validation); High +3 (validation at trust boundaries) |
+| 4.4 | Safe system/API usage | [J] | `eval`, `innerHTML`, `shell=True`, `os.system`, string-built SQL; Integrity | Low 0 (dangerous patterns with user input); Medium +1 (minor/non-user-facing risks); High +3 (clean) |
 
----
+### 5. Performance (10)
 
-## 5. Performance (10) — ISO 25010: Performance Efficiency
+All rows are judged because runtime performance cannot be measured reliably from static code alone.
 
-**All rows are [J]** — runtime performance can't be measured statically. The LLM spot-checks hot paths guided by evidence counts.
+| # | Criterion | ISO sub-characteristic | Evidence | Scoring |
+| --- | --- | --- | --- | --- |
+| 5.1 | Hot-path efficiency | Time Behaviour | `blocking_io_count`, request handlers/main loops | Low 0 (clear hot-path inefficiency); Medium +2 (minor/cold-path issues); High +5 (clean) |
+| 5.2 | Data access patterns | Resource Utilization | DB/API call sites | Low 0 (obvious N+1/full scans); Medium +1 (some concerns); High +3 (batched/index-aware) |
+| 5.3 | No blocking in hot paths | Resource Utilization, Capacity | `blocking_io_count` | Low 0 (>5 in request handlers); Medium +1 (some cold init only); High +2 (zero in hot paths) |
 
-| # | Criterion | ISO sub | Evidence | Inspection & scoring |
-|---|---|---|---|---|
-| 5.1 | Time Behaviour (hot path efficiency) | Time Behaviour | `blocking_io_count` + inspection of request handlers | Use Explore on request handlers / main loops. Are there obvious inefficiencies (repeated work, O(n²) inside hot loops, synchronous I/O in async contexts)? **Low→0** (clear smells in hot paths), **Medium→+2** (minor issues in cold paths), **High→+5** (clean). |
-| 5.2 | Data access patterns | Resource Utilization | LLM inspection of DB / API call sites | Look for N+1 patterns, unindexed scans, bulk ops missed. **Low→0** (obvious N+1 / full scans), **Medium→+1** (some concerns), **High→+3** (efficient / batched). |
-| 5.3 | No blocking in hot paths | Resource Utilization, Capacity | `blocking_io_count` | **Low→0** (`>5` in request handlers), **Medium→+1** (some in cold init only), **High→+2** (zero in hot paths). |
-
----
-
-## 6. Test Quality (15) — ISO 25010: Functional Suitability + Testability
+### 6. Test Quality (15)
 
 | # | Criterion | Kind | Signal / Source | Scoring |
-|---|---|---|---|---|
-| 6.1 | Coverage | **[M]** | parse % from grade.sh COVERAGE section raw output (tool-specific format) | `≥80`→+5; `60-80`→+3; `40-60`→+1; `<40`→0; `unknown`→+2 |
-| 6.2 | Test structure / organization | **[J]** | `test_file_count` + inspection of 2-3 test files; Testability | Are tests well-structured (arrange-act-assert, isolation, meaningful names)? **Low→0** (brittle, mocky, snapshot-heavy), **Medium→+2** (mixed), **High→+4** (clear, behavioral). |
-| 6.3 | Edge cases covered | **[J]** | inspection of test files for null/empty/boundary/error cases; Functional Completeness | **Low→0** (happy path only), **Medium→+1** (some edges), **High→+3** (explicit boundary and failure coverage). |
-| 6.4 | No flaky patterns | **[J]** | `test_sleep_count`, time-based assertions; Testability | **Low→0** (many sleeps / time-based), **Medium→+1** (a few), **High→+3** (deterministic). |
+| --- | --- | --- | --- | --- |
+| 6.1 | Coverage | [M] | parse coverage percent from `grade.sh` COVERAGE output | `>=80` +5; `60-80` +3; `40-60` +1; `<40` 0; `unknown` +2 |
+| 6.2 | Test structure | [J] | `test_file_count`, 2-3 test files; Testability | Low 0 (brittle/mock-heavy/snapshot-heavy); Medium +2 (mixed); High +4 (clear behavioral tests) |
+| 6.3 | Edge cases covered | [J] | tests for null/empty/boundary/error cases; Functional Completeness | Low 0 (happy path only); Medium +1 (some edges); High +3 (explicit boundaries/failures) |
+| 6.4 | No flaky patterns | [J] | `test_sleep_count`, time assertions; Testability | Low 0 (many sleeps/time-based assertions); Medium +1 (a few); High +3 (deterministic) |
 
----
+### 7. Operational Readiness (10)
 
-## 7. Operational Readiness (10) — DORA-readiness (static enablers)
-
-**Note:** real DORA metrics need production data. This domain scores *enablers* — static artifacts that make DORA possible.
+This domain scores static DORA/SRE enablers, not live production metrics.
 
 | # | Criterion | Kind | Signal / Source | Scoring |
-|---|---|---|---|---|
-| 7.1 | Deployment & CI enablers | **[M]** | `deploy_artifact_count` (Dockerfile/compose/k8s + any CI config) | `≥2`→+3; `1`→+1; `0`→0 |
-| 7.2 | Health endpoints | **[M]** | `health_endpoint_count` (/health, /healthz, /ready, /readyz, /livez) | `≥1`→+2; `0`→0 |
-| 7.3 | Observability lib present | **[M]** | `observability_lib_present` (prometheus, opentelemetry, datadog, sentry, etc.) | `1`→+2; `0`→0 |
-| 7.4 | Logging quality | **[J]** | `logging_call_count` + spot-check 2-3 log sites; Availability (supporting) | Are logs structured and contextual, or `println`/`print()` dumps? **Low→0** (unstructured or absent), **Medium→+1** (library present, used inconsistently), **High→+3** (structured logger with context). |
+| --- | --- | --- | --- | --- |
+| 7.1 | Deployment and CI enablers | [M] | `deploy_artifact_count` | `>=2` +3; `1` +1; `0` 0 |
+| 7.2 | Health endpoints | [M] | `health_endpoint_count` | `>=1` +2; `0` 0 |
+| 7.3 | Observability library present | [M] | `observability_lib_present` | `1` +2; `0` 0 |
+| 7.4 | Logging quality | [J] | `logging_call_count`, 2-3 log sites; Availability support | Low 0 (absent/unstructured); Medium +1 (library present, inconsistent); High +3 (structured and contextual) |
 
----
+Add domain points, cap each domain at its max, and sum to 0-100. Letter grade: A >=90, B >=80, C >=70, D >=60, F <60. If any hard-fail gate trips, cap the overall at D (<=69).
 
-**Scoring sum:** add per-criterion points within each domain, cap at the domain max, sum domains for overall (0-100). Letter grade: **A ≥90, B ≥80, C ≥70, D ≥60, F <60** — capped at D (69) if any hard-fail gate trips.
+## Evidence Collection
 
----
+Tool priority:
 
-# 🔍 EVIDENCE COLLECTION
+1. Native project tools: tests, lint, typecheck, coverage, dependency audit.
+2. Multi-language analysis tools: `lizard`, `jscpd`, `gitleaks`.
+3. Filesystem presence checks: CI, Docker/deploy artifacts, health endpoints.
+4. Direct inspection for judged criteria, constrained to specific files.
+5. Heuristic counts from `heuristics.sh` as hints only.
 
-## Tool priority (highest to lowest confidence)
+If a signal is `unknown`, use the `unknown` scoring column for mechanical criteria, list it under Missing, and lower confidence. Do not silently substitute weaker evidence for a missing real measurement.
 
-1. **Native tool output** — `tests`, `lint`, `typecheck`, `coverage`, `security_high` from stack-specific runners
-2. **Multi-language analysis tools** — `lizard` (complexity), `jscpd` (duplication), `gitleaks` (secrets)
-3. **Filesystem / presence checks** — Dockerfile, CI config, health endpoint strings
-4. **LLM inspection via Explore** — for judged criteria, always constrained to specific file paths from evidence signals
-5. **Heuristic evidence counts** — from `heuristics.sh`; used as *hints* for judged criteria, never as direct score inputs
+## Divergent Path Lens
 
-## Missing data
-
-If a signal is `unknown`:
-- For **[M]** rows: use the "Unknown" column of the scoring table; add to Missing section
-- For **[J]** rows: if the evidence signal is missing, rely on Explore inspection alone and note lowered confidence
-
-Never regex-substitute for a missing real measurement.
-
----
-
-# 🧭 DIVERGENT PATH LENS
-
-During judged Maintainability inspection, identify likely divergent paths. This is a detection and risk-reporting pass, not a mandate to merge everything.
+During judged maintainability inspection, identify likely divergent paths. This is a detection and risk-reporting pass, not a mandate to merge everything.
 
 Look for:
 
@@ -234,26 +211,26 @@ Classify each concrete candidate as:
 - `watch` - duplication exists but current tests, manifests, or narrow ownership keep the risk contained;
 - `rationalize` - active paths can drift, have already drifted, or make future changes likely to land in the wrong place.
 
-For `/grade`, cite only evidence and risk. If the next step requires choosing a canonical path, migration order, delete order, or compatibility policy, recommend `/rationalize:rationalize` instead of embedding a full cleanup plan in the audit.
+For `/grade`, cite only evidence and risk. If the next step requires choosing a canonical path, migration order, delete order, or compatibility policy, recommend the `rationalize` skill instead of embedding a full cleanup plan in the audit.
 
----
+## Confidence
 
-# 📈 CONFIDENCE
+- High: native tools ran, at least two of `lizard`, `jscpd`, `gitleaks` ran, and coverage is known.
+- Medium: most native tools ran but some universal tools or coverage are missing.
+- Low: multiple native tools are missing or all three universal tools are missing.
 
-Set based on how much of the scoring was tool-backed:
+State confidence and name the missing tools/signals.
 
-- **High** — Native tools (tests/lint/typecheck/audit) ran, AND at least 2 of {lizard, jscpd, gitleaks} ran, AND coverage is known
-- **Medium** — Most native tools ran, but some of {lizard, jscpd, gitleaks} missing
-- **Low** — Multiple native tools missing OR all three universal tools missing
+## Output Format
 
-State the confidence level in the report header and name the specific missing tools.
+Write this report to `docs/plans/codebase-health-assessment.md` unless the user specifies a different path:
 
----
-
-# 📄 OUTPUT FORMAT (STRICT)
-
-```
+```markdown
 # Software Quality Report
+
+Date: YYYY-MM-DD
+Owner: TBD
+Status: Draft
 
 **Overall Score**: <0-100>/100
 **Grade**: <A|B|C|D|F>
@@ -263,192 +240,155 @@ State the confidence level in the report header and name the specific missing to
 
 ---
 
-## 🚨 Hard-Fail Blockers
-<List each blocker with the exact signal value that fired it, or "None">
+## Hard-Fail Blockers
+<List blockers with exact signal values, or "None".>
 
 ---
 
-## 📊 Domain Scores
+## Domain Scores
 
-| Domain                  | Score     | Notes (brief) |
-|-------------------------|-----------|---------------|
-| Correctness             | X/20      | ...           |
-| Reliability             | X/15      | ...           |
-| Maintainability         | X/15      | ...           |
-| Security                | X/15      | ...           |
-| Performance             | X/10      | ...           |
-| Test Quality            | X/15      | ...           |
-| Operational Readiness   | X/10      | ...           |
-| **TOTAL**               | **X/100** |               |
-
----
-
-## 📈 Trend
-<One of:>
-- `No prior runs — baseline established.`
-- `vs <prev date> (<prev commit>): overall <+N|-N|±0>, grade <prev>→<new>, confidence <prev>→<new>`
-  + domain deltas (only those ≥ ±1)
-  + signal deltas (only those that materially moved)
+| Domain | Score | Notes |
+| --- | ---: | --- |
+| Correctness | X/20 | ... |
+| Reliability | X/15 | ... |
+| Maintainability | X/15 | ... |
+| Security | X/15 | ... |
+| Performance | X/10 | ... |
+| Test Quality | X/15 | ... |
+| Operational Readiness | X/10 | ... |
+| **TOTAL** | **X/100** | |
 
 ---
 
-## 🔍 Evidence
+## Trend
+- `No prior runs - baseline established.`
+- or `vs <prev date> (<prev commit>): overall <+N|-N|+/-0>, grade <prev> -> <new>, confidence <prev> -> <new>`
 
-### Mechanical (tool-backed)
+## Quality Delta
+- `No prior comparable run.`
+- or include the useful rows from `bash <skill-dir>/trend.sh compare '<prev_json>' '<current_json>'`, preserving its `threshold crossing`, `within bucket`, `newly measured`, and `lost evidence` labels.
+- In diff mode, also call out comparable-file diff-vs-base deltas emitted by `diff_scan.sh`, such as `lizard_warning_delta`, `lizard_max_ccn_delta`, and `largest_file_lines_delta`. Negative deltas for these signals are improvements. If `diff_current_only_file_count` or `diff_base_only_file_count` is nonzero, explicitly state that only `diff_comparable_file_count` files were used for before/after deltas.
+
+---
+
+## Evidence
+
+### Mechanical
 | Signal | Value | Tool | Scoring criterion |
-|---|---|---|---|
-| tests | <pass/fail/...> | <jest/pytest/...> | 1.1 |
-| typecheck | ... | ... | 1.2 |
-| ... | | | |
+| --- | --- | --- | --- |
 
-### Judged findings (ISO 25010-anchored)
-- **[Domain.N] Criterion — <Low/Med/High → +N>**: one sentence justification citing `path/to/file.py:42` and the ISO sub-characteristic.
-- ...
+### Judged Findings
+- **[Domain.N] Criterion - <Low/Medium/High -> +N>**: one-sentence justification citing specific paths and the ISO sub-characteristic.
 
 ### Missing
-- `<signal>` — `<tool>` not installed / not applicable. Install: `<install command>`.
-- ...
+- `<signal>` - `<tool>` not installed, blocked, timed out, or not applicable.
 
 ---
 
-## ⚠️ Top Risks
-1. <risk> — <impact> — <specific path>
-2. ...
+## Top Risks
+1. <risk> - <impact> - <specific path/evidence>
 
----
-
-## 🧭 Divergent Paths
+## Divergent Paths
 | Candidate | Evidence | Disposition | Risk / Next Step |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | <workflow/contract> | <paths> | <justified/watch/rationalize> | <why it matters, or "None found"> |
 
----
+## Fastest Improvements
+1. <action> - <expected point gain> - <effort estimate>
 
-## 🛠️ Fastest Improvements
-1. <action> — <expected point gain> — <effort estimate>
-2. ...
+## Roadmap To A Grade
+| Phase | Target | Work | Exit Criteria | Expected Score Movement |
+| --- | --- | --- | --- | --- |
 
----
+## Strengths To Preserve
+- <architecture/practice worth keeping>
 
-## Summary
-<2-4 sentences: overall state, biggest lever, recommended next step>
+## Work To Defer Or Avoid
+- <tempting but low-evidence/churn-heavy change to avoid>
+
+## Verification Notes
+- <commands run and outcomes>
 ```
 
----
+## Execution Rules
 
-# EXECUTION RULES
+1. Establish the repo root with `git rev-parse --show-toplevel` when possible.
+2. Check `git status --short` before editing. Do not revert unrelated user changes.
+3. Read `standards.md` once per session.
+4. Resolve mode and base ref from the user request.
+5. Capture provenance with `git rev-parse --short HEAD` and `bash <skill-dir>/trend.sh slug`.
+6. Read the previous entry for this mode with `bash <skill-dir>/trend.sh prev <slug> <mode>`.
+7. Run project-wide signals from repo root: `bash <skill-dir>/grade.sh`.
+8. In diff mode, create a temporary file with `git diff --name-only <base_ref>...HEAD`, stop if empty, run `bash <skill-dir>/diff_scan.sh <tmp-file> <base_ref>`, then remove the temporary file.
+9. Parse all `SIGNAL: key=value` lines. In diff mode, diff-scoped signals override project-wide signals only for diff-scoped criteria.
+10. Apply mechanical scoring exactly from the tables.
+11. Apply judged scoring with direct file inspection and ISO-anchored justifications.
+12. Run the divergent-path lens during Maintainability judgment and include a `Divergent Paths` section, even if it says "None found."
+13. Check hard-fail gates and cap the grade if needed.
+14. Build the v1 JSON history entry, then compare it with the previous entry using `bash <skill-dir>/trend.sh compare '<prev_json>' '<current_json>'` when `prev_json` exists. Use this output for `Quality Delta`; omit unchanged rows.
+15. Append the v1 JSON history entry with `bash <skill-dir>/trend.sh append <slug> '<json>' <mode>`. If append fails, report that in the Trend section.
+16. Write or update the report file, preserving useful local history/status notes.
 
-Follow this flow in order. Steps marked **[full only]** or **[diff only]** are mode-specific.
+## Diff Mode
 
-1. **Read `standards.md` once per session** if you haven't yet — it contains the philosophy and threshold citations.
-2. **Parse arguments** per the ARGUMENTS section. Resolve mode and, for diff mode, the base ref.
-3. **Capture provenance**: `git rev-parse --short HEAD` and `${CLAUDE_SKILL_DIR}/trend.sh slug`.
-4. **[full only] Commit cache check** (see COMMIT CACHING). Cache hit → print cached report, stop.
-5. **Read the previous entry** for this mode: `${CLAUDE_SKILL_DIR}/trend.sh prev <slug> <mode>`. Empty result = first run → baseline.
-6. **Run signal collectors:**
-   - **Always:** `${CLAUDE_SKILL_DIR}/grade.sh` from the repo root → project-wide signals.
-   - **[diff only]** Also: `git diff --name-only <base_ref>...HEAD > /tmp/grade-diff-files.<pid>.txt && ${CLAUDE_SKILL_DIR}/diff_scan.sh /tmp/grade-diff-files.<pid>.txt` → diff-scoped signals. Clean up the tmp file after.
-7. **Parse `SIGNAL:` lines** from both scripts into a signals dict. In diff mode, `*_scope=diff` signals override the matching `*_scope=project` signals for diff-scoped criteria (lint, secrets, complexity, duplication, largest_file_lines, heuristic evidence). Tests/typecheck/coverage/security_high/deploy_artifact_count stay project-wide regardless.
-8. **Apply [M] scoring** mechanically from the tables. These scores must be reproducible — the same signals must always produce the same numbers.
-9. **Apply [J] scoring** per the pattern:
-   - For each [J] criterion, read the listed evidence signal(s)
-   - For criteria worth ≥4 points, use the `Explore` subagent with a specific inspection target ("look at these 5 files for X pattern"); for <4 point criteria, a quick `Read` is sufficient
-   - Pick Low/Medium/High and write a one-sentence justification citing specific paths + the ISO sub-characteristic
-   - **Anchor to previous entry**: if evidence signals are within ±10% of the prior run's *and* the mechanical signals haven't materially changed (no new fail/pass transitions, complexity/duplication within 1% band), inherit the prior judged scores unless you have specific new evidence. State "inherited from prev" in the justification.
-10. **Run the divergent-path lens** as part of Maintainability judgment and include a Divergent Paths section, even if it says "None found."
-11. **Check hard-fail gates**. If triggered, cap at D (≤69) and list blockers first, each citing the signal value.
-12. **Append history entry** (see TREND TRACKING).
-13. **Emit the report** per OUTPUT FORMAT. Every score must be traceable to either a tool output (for [M]) or an inspection with file paths + ISO citation (for [J]).
+Grades only files changed between `HEAD` and the base ref.
 
----
+| Criterion | Scope |
+| --- | --- |
+| Tests | project |
+| Typecheck | project |
+| Lint | diff |
+| Coverage | project |
+| Dependency vulnerabilities | project |
+| Secrets | diff |
+| Complexity | diff |
+| Duplication | diff |
+| Largest file | diff |
+| Operational enablers | project |
+| Heuristic evidence | diff |
 
-# 💾 COMMIT CACHING
-
-**Applies to full mode only.** Diff mode always re-runs (the diff set can change independently of HEAD).
-
-**Cache-hit conditions (ALL must be true):**
-1. `git rev-parse --short HEAD` matches the `commit` field of the latest full-mode history entry
-2. `git status --porcelain` is empty (working tree clean)
-3. Mode is `full`
-
-**On cache hit:** print this short report and stop. Do NOT run grade.sh, diff_scan.sh, or append a new history entry.
-
-```
-# Software Quality Report (cached)
-
-Current HEAD `<sha>` matches the most recent full-mode grade. No re-audit performed.
-
-**Previous score**: <overall>/100 <grade> (Confidence: <conf>)
-**Recorded**: <date>
-
-Run `/grade-history` for the full timeline. To force a re-audit, commit or stash your changes, or use `/grade --diff` to grade uncommitted work against a base ref.
-```
-
----
-
-# 🎯 DIFF MODE
-
-Grades **only files changed between `HEAD` and the base ref**.
-
-## Signal scoping
-
-| Criterion | Scope | Source |
-|---|---|---|
-| Tests | **project** | grade.sh — a failing test anywhere still fails |
-| Typecheck | **project** | grade.sh — needs cross-file context |
-| Lint | **diff** | diff_scan.sh — only files you changed |
-| Coverage | **project** | grade.sh — per-file coverage not meaningful |
-| Security (deps) | **project** | grade.sh — package-level |
-| Secrets | **diff** | diff_scan.sh — did *you* introduce secrets |
-| Complexity (lizard) | **diff** | diff_scan.sh — your changes' CCN |
-| Duplication (jscpd) | **diff** | diff_scan.sh — your changes' duplication |
-| Largest file | **diff** | diff_scan.sh — did you create a god file |
-| Ops enablers | **project** | grade.sh — repo-wide artifacts |
-| Heuristic evidence | **diff** | diff_scan.sh via heuristics.sh |
-
-## Heuristic constraints in diff mode
-
-All [J] inspection via Explore must be **scoped to the changed files only**. Pass the file list explicitly. A reliability issue in an untouched file is not relevant to grading this diff.
+All judged inspection in diff mode must be scoped to the changed files. A reliability issue in an untouched file is not relevant to a diff grade unless it is surfaced by project-wide tests/typecheck.
 
 For divergent-path findings in diff mode, cite unchanged canonical paths only when needed to prove the changed file duplicates or forks them. Score and recommend only against the changed surface.
 
-## Empty diff
+When a base ref is available, `diff_scan.sh` emits scope counts and comparable-file base/current deltas for changed-file complexity and largest-file size. Use `diff_comparable_file_count`, `diff_current_only_file_count`, and `diff_base_only_file_count` to state how much of the diff had true before/after comparability. Treat negative `lizard_warning_delta`, `lizard_avg_ccn_delta`, `lizard_max_ccn_delta`, and `largest_file_lines_delta` values as direct evidence of improvement only for comparable files, even when the absolute score bucket is unchanged. Treat positive values as regression evidence. If current-only or base-only files are present, report them as scope changes rather than improvement/regression deltas.
 
-If `git diff --name-only <base>...HEAD` returns no files:
-```
-No files changed between HEAD and <base_ref>. Nothing to grade in diff mode.
-```
-Stop. Do not append a history entry for an empty diff.
+## Trend Tracking
 
----
-
-# 📈 TREND TRACKING
-
-Every run is persisted so the next run can diff against it. Full-mode and diff-mode histories are **stored in separate files** so trajectories don't mix.
-
-**Flow:**
-1. `slug=$(trend.sh slug)` from repo root
-2. `prev=$(trend.sh prev <slug> <mode>)` — third arg keeps modes separate
-3. Capture `commit=$(git rev-parse --short HEAD)`
-
-**After scoring, build a v1 JSON entry** (single-line, no pretty-printing):
+Build a single-line v1 JSON entry after scoring:
 
 ```json
-{"v":1,"date":"YYYY-MM-DD","commit":"<short-sha>","mode":"<full|diff>","base_ref":"<ref or null>","overall":N,"grade":"<A-F>","confidence":"<High|Medium|Low>","domains":{"correctness":N,"reliability":N,"maintainability":N,"security":N,"performance":N,"test_quality":N,"operational_readiness":N},"signals":{"tests":"<pass|fail|timeout|missing>","lint":"<pass|fail|timeout|missing>","typecheck":"<pass|fail|timeout|missing>","coverage":"<N|unknown>","security_high":"<N|unknown>","secrets":"<N|unknown>","secrets_tool":"<gitleaks|rg-fallback|none>","largest_file_lines":"<N|unknown>","complexity_warning_count":"<N|unknown>","complexity_tool":"<eslint|lizard>","lizard_warning_count":"<N|unknown>","lizard_avg_ccn":"<N|unknown>","duplication_pct":"<N|unknown>","deploy_artifact_count":"<N|unknown>","health_endpoint_count":"<N|unknown>","observability_lib_present":"<0|1|unknown>","validation_lib_present":"<0|1|unknown>","suppression_count":"<N|unknown>","timeout_retry_count":"<N|unknown>","blocking_io_count":"<N|unknown>","logging_call_count":"<N|unknown>","test_file_count":"<N|unknown>","test_sleep_count":"<N|unknown>"}}
+{"v":1,"date":"YYYY-MM-DD","commit":"<short-sha>","mode":"<full|diff>","base_ref":"<ref or null>","overall":N,"grade":"<A-F>","confidence":"<High|Medium|Low>","domains":{"correctness":N,"reliability":N,"maintainability":N,"security":N,"performance":N,"test_quality":N,"operational_readiness":N},"signals":{"tests":"<pass|fail|timeout|missing>","lint":"<pass|fail|timeout|missing>","typecheck":"<pass|fail|timeout|missing>","coverage":"<N|unknown>","security_high":"<N|unknown>","secrets":"<N|unknown>","secrets_tool":"<gitleaks|rg-fallback|none>","largest_file_lines":"<N|unknown>","lizard_warning_count":"<N|unknown>","lizard_avg_ccn":"<N|unknown>","lizard_max_ccn":"<N|unknown>","duplication_pct":"<N|unknown>","deploy_artifact_count":"<N|unknown>","health_endpoint_count":"<N|unknown>","observability_lib_present":"<0|1|unknown>","validation_lib_present":"<0|1|unknown>","suppression_count":"<N|unknown>","timeout_retry_count":"<N|unknown>","blocking_io_count":"<N|unknown>","logging_call_count":"<N|unknown>","test_file_count":"<N|unknown>","test_sleep_count":"<N|unknown>"}}
 ```
 
-Field rules:
-- `mode`: `"full"` or `"diff"` — required
-- `base_ref`: resolved ref in diff mode (e.g. `"main"`), `null` in full mode
-- `signals.*`: numeric values stored as strings so `"unknown"` can coexist with numerics
-- Omit fields that are genuinely absent — older v1 entries may have fewer keys and are still valid
+Append with `bash <skill-dir>/trend.sh append <slug> '<json>' <mode>`. Full-mode and diff-mode histories are separate. Populate the Trend section by diffing prior overall/domain values. Populate `Quality Delta` with `bash <skill-dir>/trend.sh compare '<prev_json>' '<current_json>'` plus diff-vs-base deltas when present.
 
-**Append:** `${CLAUDE_SKILL_DIR}/trend.sh append <slug> '<json>' <mode>` — writes to `<slug>.jsonl` or `<slug>.diff.jsonl`.
+## Recommendation Rules
 
-**Populate the Trend section** by diffing the prev entry against this one. For first-mode runs: `No prior runs — baseline established.`
+Include recommendations only when they:
 
-**Schema compatibility:**
-- v0 entries have no `v` field → score deltas only, signals marked `n/a`
-- v1 entries without `mode` → treat as `mode=full`
+- fix or prevent a demonstrated defect,
+- reduce security or operational risk,
+- add a measurable guardrail,
+- improve a contract boundary,
+- preserve or improve diagnosability,
+- or reduce future change cost in code already blocking work.
+- converge duplicate active paths when evidence shows drift risk, confusing ownership, or repeated change cost.
 
-**Never silently skip the append** — the history file is the whole point. If append fails, surface the error in the Trend section.
+Avoid churn-heavy recommendations:
+
+- no framework rewrites by default,
+- no service splits unless scale or ownership evidence demands it,
+- no broad file-splitting campaigns unless oversized files are actively blocking work,
+- no broad convergence campaign without naming the workflow, canonical path, retirement target, and verification gate,
+- no "increase coverage" recommendation without naming the specific risk the test should cover.
+
+## Final Response
+
+Keep the final response concise:
+
+- Give the report file path.
+- List overall score, grade, confidence, and domain scores.
+- Summarize hard-fail blockers and top P0/P1-equivalent improvements.
+- List verification commands run.
+- Mention anything important that was not run or remained unknown.

@@ -36,9 +36,9 @@ Where `<plugin-name>` is one of the plugins listed below.
 
 | Plugin | Skills | Description |
 |---|---|---|
-| [`grade`](plugins/grade) | `/grade:grade`, `/grade:grade-history` | Strict, evidence-driven software quality audit anchored to ISO/IEC 25010. Multi-domain scoring, full + diff modes, divergent-path findings, trend tracking, multi-language. |
-| [`rationalize`](plugins/rationalize) | `/rationalize:rationalize` | Divergent-path analysis and convergence planning for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths. |
-| [`bug-scrub`](plugins/bug-scrub) | `$bug-scrub`, `/bug-scrub:bug-scrub` | Evidence-driven bug scrub for repositories and diffs, with optional bounded subagent analysis for large codebases. |
+| [`grade`](plugins/grade) | `/grade:grade`, `/grade:grade-history` | Strict, evidence-driven software quality audit with fresh repo-context checks, anchored to ISO/IEC 25010. Multi-domain scoring, full + diff modes, divergent-path findings, trend tracking, multi-language. |
+| [`rationalize`](plugins/rationalize) | `/rationalize:rationalize` | Divergent-path analysis and convergence planning with fresh repo-context checks for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths. |
+| [`bug-scrub`](plugins/bug-scrub) | `$bug-scrub`, `/bug-scrub:bug-scrub` | Evidence-driven bug scrub for repositories and diffs, with fresh repo-context checks and optional bounded subagent analysis for large codebases. |
 | [`codex-review`](plugins/codex-review) | `/codex-review:codex-review` | Codex code review closeout helper for local patches, PR branches, and parallel verification. |
 | [`pr-delivery`](plugins/pr-delivery) | `$pr-delivery`, `/pr-delivery:pr-delivery` | End-to-end pull request delivery workflow covering commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup. |
 | [`recursive-plan-review`](plugins/recursive-plan-review) | `$recursive-plan-review`, `/recursive-plan-review:recursive-plan-review` | Iterative plan-file critique and refinement that applies evidence-backed improvements until no actionable comments remain. |
