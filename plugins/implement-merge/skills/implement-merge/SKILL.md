@@ -1,6 +1,6 @@
 ---
 name: implement-merge
-description: "Implement the most recently created plan end to end, clearing stale context first, creating an explicit goal for the plan, executing the plan in mergeable phases, using $pr-delivery for each phase that must be committed, pushed, reviewed, and merged, then rebuilding any already-running local containers after the complete plan has landed. Use when the user invokes $implement-merge, asks to implement and merge a plan, says to execute the latest plan through PRs, or wants an autonomous plan-to-merge delivery loop."
+description: "Implement the most recently created plan end to end, clearing stale context first and between PRs, creating an explicit goal for the plan, executing the plan in mergeable phases, using $pr-delivery for each phase that must be committed, pushed, reviewed, and merged, then rebuilding any already-running local containers after the complete plan has landed. Use when the user invokes $implement-merge, asks to implement and merge a plan, says to execute the latest plan through PRs, or wants an autonomous plan-to-merge delivery loop."
 ---
 
 # Implement Merge
@@ -33,9 +33,33 @@ For each plan phase:
 4. Run the smallest convincing local verification for that phase, broadening when risk or repository instructions require it.
 5. Update the plan file as tasks are completed or if the implementation intentionally diverges.
 6. Invoke `$pr-delivery` to commit, push, open or update the PR, monitor checks and reviews, merge safely, verify target-branch ancestry, verify target-branch CI when required, and clean up only after verification.
-7. After the phase merge is verified, refresh local repository state from the target branch before starting the next phase.
+7. Run the between-PR context reset before selecting or starting the next phase.
 
 Do not batch unrelated phases into one PR unless the plan explicitly requires atomic delivery or separating them would create an invalid intermediate state.
+
+## Between-PR Context Reset
+
+After each phase PR is merged and target-branch CI is verified, clear stale context before continuing the loop:
+
+1. Finish delivery cleanup first.
+   - Verify the platform-reported merge commit is reachable from the target branch.
+   - Refresh local repository state from the target branch.
+   - Delete only branches/worktrees that `$pr-delivery` has verified are safe to delete.
+   - Ensure no PR monitoring or long-running command sessions remain active.
+2. Close or settle phase-specific subagents.
+   - Close completed review or worker agents that are no longer needed.
+   - Do not carry subagent conclusions forward unless the conclusion is reflected in merged code, the plan file, CI output, or a fresh source read.
+3. Rebuild context from source artifacts.
+   - Re-read repository instructions and the selected plan file from disk.
+   - Re-check `git status`, current branch, target-branch HEAD, open dirty files, CI state, and relevant app/container state.
+   - Treat previous conversation analysis, branch-local observations, and unmerged diffs as stale unless confirmed by these artifacts.
+4. Update execution state.
+   - Update the task plan from the plan file's current status.
+   - Record the merged PR and merge commit in the working notes or final report context.
+   - Choose the next smallest coherent phase from the refreshed plan and repository state.
+   - Start the next phase from the refreshed target-branch state, not from the merged PR branch or the original phase list.
+
+This reset is lightweight context hygiene, not destructive cleanup: do not reset the worktree, discard unrelated dirty files, rebuild containers, or restart services unless the user or repository instructions require it.
 
 ## Completion
 

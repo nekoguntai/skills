@@ -1,6 +1,6 @@
 {
   "name": "implement-merge",
-  "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases, delivers each phase with pr-delivery, and rebuilds already-running containers after completion.",
+  "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases, resets context between PR phases, and rebuilds already-running containers after completion.",
   "author": {
     "name": "nekoguntai"
   },

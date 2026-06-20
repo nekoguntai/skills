@@ -1,9 +1,10 @@
 # implement-merge
 
 Plan-to-merge execution loop for implementation plans. The skill clears stale
-context, selects the newest plan, tracks it as an explicit goal, implements the
-plan in bounded phases, delivers each phase with `pr-delivery`, and rebuilds
-already-running local containers after the full plan has landed.
+context at startup and between PR phases, selects the newest plan, tracks it as
+an explicit goal, implements the plan in bounded phases, delivers each phase
+with `pr-delivery`, and rebuilds already-running local containers after the full
+plan has landed.
 
 Ships one skill:
 
