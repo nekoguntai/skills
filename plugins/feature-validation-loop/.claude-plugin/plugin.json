@@ -1,0 +1,10 @@
+{
+  "name": "feature-validation-loop",
+  "description": "Portable feature, test, defect, and remediation validation loop with a canonical CSV ledger and Prismatic Thread artifacts.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

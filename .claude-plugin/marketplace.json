@@ -27,6 +27,12 @@
       "description": "Evidence-driven bug scrub for repositories and diffs, with fresh repo-context checks and optional bounded subagent analysis for large codebases."
     },
     {
+      "name": "feature-validation-loop",
+      "source": "./plugins/feature-validation-loop",
+      "version": "0.1.0",
+      "description": "End-to-end product behavior validation loop that discovers code-derived features, maintains a canonical CSV ledger, generates test scenarios, documents defects, fixes verified issues, retests, and publishes Prismatic Thread artifacts."
+    },
+    {
       "name": "codex-review",
       "source": "./plugins/codex-review",
       "version": "1.0.0",

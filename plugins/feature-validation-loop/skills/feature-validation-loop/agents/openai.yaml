@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Validation Loop"
+  short_description: "Validate product behavior with a canonical ledger."
+  default_prompt: "Run a feature validation loop for this app, maintaining the canonical ledger and Prismatic Thread artifacts."

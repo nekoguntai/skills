@@ -1,0 +1,39 @@
+{
+  "name": "feature-validation-loop",
+  "version": "0.1.0",
+  "description": "Portable feature, test, defect, and remediation validation loop with a canonical CSV ledger and Prismatic Thread artifacts.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "feature-validation",
+    "quality",
+    "qa",
+    "ledger",
+    "prismatic-thread"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Feature Validation Loop",
+    "shortDescription": "Validate product behavior with a canonical ledger.",
+    "longDescription": "End-to-end product behavior validation loop for application repositories. Discovers code-derived user-facing features, maintains a canonical CSV ledger, generates test scenarios, records defects, fixes verified functional or UX issues, retests, and publishes Prismatic Thread summaries when configured.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute",
+      "Analyze"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Run $feature-validation-loop for this app.",
+      "Discover every user-facing feature, maintain the canonical validation ledger, test behavior, fix verified defects, and publish Prismatic Thread artifacts.",
+      "Create or update the feature validation ledger and generate the standalone HTML report."
+    ]
+  }
+}
