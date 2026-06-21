@@ -23,6 +23,30 @@ Use this skill to turn the newest applicable plan into merged production code. T
    - Include the plan path and the intended phase sequence in the objective when possible.
    - If an active goal already exists, continue only if it matches the selected plan; otherwise ask before replacing direction.
 
+## Branch And Worktree Ownership
+
+At startup, create a small cleanup ledger for resources this loop owns:
+`target_branch`, `task_branch`, `worktree_path`, `created_by_loop`,
+`converted_to_next_phase`, and `cleanup_status`.
+
+- Use distinctive names for loop-created branches, such as
+  `codex/implement-merge/<plan-or-phase-slug>`. If a temporary worktree is
+  needed, use the same slug in the path.
+- Prefer a normal task branch in the current repo. Create an isolated worktree
+  only to protect unrelated dirty work or to keep independent phases from
+  blocking each other.
+- Before creating a worktree, run `git worktree list --porcelain` and classify
+  existing loop-owned worktrees for the same repo. Remove only clean, verified
+  leftovers that belong to this loop; leave dirty, unmerged, or unrecognized
+  worktrees and report them.
+- Pass the ledger entries to `$pr-delivery` so it can delete the correct remote
+  branch, local branch, and temporary worktree after merge and target-branch CI
+  verification.
+- At final closeout, run one ownership sweep for loop-created branches and
+  worktrees. Every loop-owned resource must be either cleaned up, intentionally
+  converted into the next phase branch, or listed as a leftover with the exact
+  reason it was not removed.
+
 ## Implementation Loop
 
 For each plan phase:
@@ -44,7 +68,7 @@ After each phase PR is merged and target-branch CI is verified, clear stale cont
 1. Finish delivery cleanup first.
    - Verify the platform-reported merge commit is reachable from the target branch.
    - Refresh local repository state from the target branch.
-   - Delete only branches/worktrees that `$pr-delivery` has verified are safe to delete.
+   - Delete only branches/worktrees that `$pr-delivery` has verified are safe to delete, and update the cleanup ledger with the result.
    - Ensure no PR monitoring or long-running command sessions remain active.
 2. Close or settle phase-specific subagents.
    - Close completed review or worker agents that are no longer needed.

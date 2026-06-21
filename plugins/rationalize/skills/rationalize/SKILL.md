@@ -44,6 +44,15 @@ plan, refresh the repository context:
 This is context hygiene, not destructive cleanup: do not reset the worktree,
 discard changes, or remove prior decisions merely because they are inconvenient.
 
+## Loop-Check Invocation
+
+Do not create or remove branches/worktrees for ordinary rationalization. When a
+loop skill runs `rationalize` from a caller-created loop-check branch or
+temporary worktree, update the plan in the current checkout, record the current
+branch/worktree path and generated plan changes in Verification Notes, and
+leave cleanup or conversion to the caller. Remove only temporary files that
+`rationalize` itself created.
+
 ## Output
 
 Write `docs/plans/rationalization-plan.md` with this shape unless the user requests a different artifact:
@@ -100,6 +109,9 @@ Scope: <repo-wide | subsystem | diff | user-specified scope>
 10. Specify verification per phase: focused tests, typechecks, lint, contract tests, migration checks, screenshots, logs, or behavior diffs as appropriate.
 11. Re-read the plan for unnecessary churn. Remove broad cleanup that lacks evidence.
 12. Update the plan file and summarize the highest-priority decisions for the user.
+13. If running inside a loop-check branch/worktree, include that branch/path and
+    the plan files changed in Verification Notes so the caller can clean up or
+    convert the branch intentionally.
 
 ## Search Hints
 

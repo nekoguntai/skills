@@ -29,6 +29,29 @@ Run one autonomous delivery pass by default, then perform the post-closeout fron
 
 After the autonomous follow-up budget is exhausted, report the next selected finding and stop with a deferral instead of opening an unbounded sequence of PRs.
 
+## Branch And Worktree Ownership
+
+Maintain a cleanup ledger for resources created by autonomous mode:
+`target_branch`, `task_branch`, `worktree_path`, `created_by_loop`,
+`converted_to_next_pass`, and `cleanup_status`.
+
+- Use distinctive names such as `codex/frontend-pr-loop/<issue-slug>` for
+  implementation branches. Use the same slug in temporary worktree paths when
+  a worktree is necessary.
+- Prefer a normal task branch when the current worktree is clean enough. Use an
+  isolated worktree only to protect unrelated dirty work or to keep follow-up
+  pass work separate from the synced target branch.
+- Before creating a new worktree, run `git worktree list --porcelain` and
+  classify existing loop-owned worktrees. Remove only clean leftovers proven to
+  belong to this loop; leave dirty, unmerged, or unrecognized worktrees in place
+  and report them.
+- Pass the ledger to `$pr-delivery` so delivery cleanup targets the correct
+  remote branch, local branch, and temporary worktree after merge and
+  target-branch CI verification.
+- At final closeout, run one ownership sweep. Each loop-created branch/worktree
+  must be cleaned up, converted into the next pass branch, or listed as a
+  leftover with the exact reason it remains.
+
 ## Autonomous Loop Mode
 
 In autonomous loop mode, run these phases without pausing for permission:
@@ -41,7 +64,7 @@ In autonomous loop mode, run these phases without pausing for permission:
 6. Run the pre-delivery adversarial implementation review and resolve verified findings.
 7. Use `$pr-delivery` to commit only relevant files, push, open/update the PR, monitor CI/reviews, fix failures, merge safely, verify target-branch ancestry, verify target-branch post-merge CI for the merge commit, and clean up.
 8. Rebuild already-running localhost app containers after the verified merge and green target-branch CI.
-9. Run the between-pass context reset, then run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
+9. Run the between-pass context reset and ownership sweep, then run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
 
 Do not ask the user to choose among recommendations in autonomous mode. If several improvements are viable, pick the most defensible one and leave the rest as follow-up notes after delivery.
 

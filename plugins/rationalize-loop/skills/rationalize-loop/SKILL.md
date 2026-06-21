@@ -43,6 +43,30 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
 6. Repeat this preflight before every additional implementation pass. Never
    begin source edits for a second pass directly on the synced target branch.
 
+## Branch And Worktree Ownership
+
+Maintain a cleanup ledger for every branch or worktree this loop creates:
+`target_branch`, `task_branch`, `loop_check_branch`, `worktree_path`,
+`created_by_loop`, `converted_to_next_pass`, and `cleanup_status`.
+
+- Use distinctive names: `codex/rationalize-loop/<area-slug>` for
+  implementation work and `codex/rationalize-loop-check/<area-slug>` for
+  post-closeout rationalize checks. Use the same slug in temporary worktree
+  paths when worktrees are necessary.
+- Prefer a normal task branch when the current worktree is clean enough. Use an
+  isolated worktree only to protect unrelated dirty work, keep companion plan
+  edits isolated, or keep a plan-mutating loop check off the synced target
+  branch.
+- Before creating a new worktree, run `git worktree list --porcelain` and
+  classify existing loop-owned worktrees. Remove only clean leftovers that are
+  proven to belong to this loop and no longer hold a selected next pass. Leave
+  dirty, unmerged, or unrecognized worktrees in place and report them.
+- Pass the ledger to `pr-delivery` during Phase 5 so delivery cleanup targets
+  the right remote branch, local branch, and temporary worktree.
+- At final closeout, run one ownership sweep. Each loop-created branch/worktree
+  must be cleaned up, converted into the next task branch, or listed as a
+  leftover with the exact reason it remains.
+
 ## Context Reset Discipline
 
 At startup and after each delivered PR before rebuild, post-closeout
@@ -282,7 +306,8 @@ refreshed plan for major actionable `converge` or `remove` items using the same
 selection rules from Phase 1:
 
 - If no major actionable converge/remove item remains, record that result and
-  abandon or clean up the generated loop-check branch/worktree so the target
+  clean up the generated loop-check branch/worktree, convert it into the next
+  task branch, or report it as a leftover with the exact reason so the target
   branch remains clean, then finish.
 - If a major actionable item remains, is feasible in another bounded PR, and the
   pass budget allows another autonomous delivery, keep or rename the
@@ -294,6 +319,12 @@ selection rules from Phase 1:
   instead of forcing an unsafe PR.
 - If a major actionable item remains after the pass budget is exhausted, record
   it as the next deferred phase and stop rather than opening another PR.
+
+For loop-check cleanup, discard only files that this Phase 7 rationalize pass
+generated or modified on the loop-check branch, such as the refreshed
+rationalization plan, and only when the branch is not being converted into the
+next task branch. Do not restore unrelated files or remove a dirty worktree
+whose dirty state is not fully explained by this loop-check pass.
 
 Do not keep looping indefinitely on `watch`, `keep separate`, or previously
 rejected/deferred findings. Each additional pass must select a concrete,

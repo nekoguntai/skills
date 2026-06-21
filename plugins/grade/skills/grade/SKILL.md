@@ -42,6 +42,15 @@ repository context:
 This is context hygiene, not destructive cleanup: do not reset the worktree,
 discard changes, or rewrite report history to hide older runs.
 
+## Loop-Check Invocation
+
+Do not create or remove branches/worktrees for ordinary audits. When a loop
+skill runs `grade` from a caller-created loop-check branch or temporary
+worktree, write the report and history in the current checkout, record the
+current branch/worktree path and generated files in Verification Notes, and
+leave cleanup or conversion to the caller. Remove only temporary files that
+`grade` itself created, such as diff-scope file lists.
+
 ## Spirit
 
 `$grade` is an audit tool, not an opinion generator.
@@ -328,6 +337,9 @@ Status: Draft
 14. Build the v1 JSON history entry, then compare it with the previous entry using `bash <skill-dir>/trend.sh compare '<prev_json>' '<current_json>'` when `prev_json` exists. Use this output for `Quality Delta`; omit unchanged rows.
 15. Append the v1 JSON history entry with `bash <skill-dir>/trend.sh append <slug> '<json>' <mode>`. If append fails, report that in the Trend section.
 16. Write or update the report file, preserving useful local history/status notes.
+17. If running inside a loop-check branch/worktree, include that branch/path and
+    the report/history files changed in Verification Notes so the caller can
+    clean up or convert the branch intentionally.
 
 ## Diff Mode
 

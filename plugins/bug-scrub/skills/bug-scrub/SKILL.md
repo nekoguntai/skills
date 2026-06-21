@@ -51,6 +51,23 @@ or open a PR.
 5. Determine analysis scope: whole repo, diff, named subsystem, or suspected
    bug class.
 
+## Branch And Worktree Discipline
+
+Read-only scrub mode must not create branches or worktrees. In fix or delivery
+mode, use a branch/worktree only when it protects unrelated dirty work or when
+the user explicitly asked for deliverable changes.
+
+- Use a distinctive branch name such as `codex/bug-scrub/<finding-slug>` for
+  bug-fix work created by this skill.
+- If an isolated worktree is needed, run `git worktree list --porcelain` first
+  and record the created branch, path, and reason.
+- When delivery is requested, pass that cleanup provenance to `pr-delivery` and
+  let it remove the remote branch, local branch, and temporary worktree only
+  after merge and target-branch CI verification.
+- If fix mode stops before delivery, clean up only a branch/worktree that this
+  skill created and that has no uncommitted or unmerged work. Leave dirty,
+  unmerged, or unrecognized resources in place and report the exact branch/path.
+
 ## Context Freshness
 
 Before accepting findings, writing a report, or switching from analysis to fix

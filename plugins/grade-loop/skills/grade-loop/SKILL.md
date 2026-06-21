@@ -39,6 +39,29 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
 6. Repeat this preflight before every additional implementation pass. Never
    begin source edits for a second pass directly on the synced target branch.
 
+## Branch And Worktree Ownership
+
+Maintain a cleanup ledger for every branch or worktree this loop creates:
+`target_branch`, `task_branch`, `loop_check_branch`, `worktree_path`,
+`created_by_loop`, `converted_to_next_pass`, and `cleanup_status`.
+
+- Use distinctive names: `codex/grade-loop/<finding-slug>` for implementation
+  work and `codex/grade-loop-check/<finding-slug>` for post-closeout grade
+  checks. Use the same slug in temporary worktree paths when worktrees are
+  necessary.
+- Prefer a normal task branch when the current worktree is clean enough. Use an
+  isolated worktree only to protect unrelated dirty work or to keep a
+  report-mutating loop check off the synced target branch.
+- Before creating a new worktree, run `git worktree list --porcelain` and
+  classify existing loop-owned worktrees. Remove only clean leftovers that are
+  proven to belong to this loop and no longer hold a selected next pass. Leave
+  dirty, unmerged, or unrecognized worktrees in place and report them.
+- Pass the ledger to `pr-delivery` during Phase 5 so delivery cleanup targets
+  the right remote branch, local branch, and temporary worktree.
+- At final closeout, run one ownership sweep. Each loop-created branch/worktree
+  must be cleaned up, converted into the next task branch, or listed as a
+  leftover with the exact reason it remains.
+
 ## Context Reset Discipline
 
 At startup and after each delivered PR before rebuild, post-closeout grading, or
@@ -260,8 +283,9 @@ Then inspect the refreshed grade report for major actionable issues using the
 same selection rules from Phase 1:
 
 - If no major actionable issues remain, record that result, capture the final
-  score/evidence for the final response, and abandon or clean up the generated
-  loop-check branch/worktree so the target branch remains clean.
+  score/evidence for the final response, and clean up the generated loop-check
+  branch/worktree, convert it into the next task branch, or report it as a
+  leftover with the exact reason so the target branch remains clean.
 - If a major actionable issue remains, is feasible in another bounded PR, and
   the pass budget allows another autonomous delivery, keep or rename the
   loop-check branch as the next task branch, repeat Preflight, then start
@@ -271,6 +295,12 @@ same selection rules from Phase 1:
   product/operational decision, or exceed the remaining pass budget, record the
   blocker or deferral, clean up generated loop-check changes, and stop instead
   of forcing an unsafe PR.
+
+For loop-check cleanup, discard only files that this Phase 7 grade pass
+generated or modified on the loop-check branch, such as the refreshed report or
+history entries, and only when the branch is not being converted into the next
+task branch. Do not restore unrelated files or remove a dirty worktree whose
+dirty state is not fully explained by this loop-check pass.
 
 Do not keep looping indefinitely on low-evidence recommendations or on the same
 rejected/deferred findings. Each additional pass must select a concrete,

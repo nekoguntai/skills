@@ -11,19 +11,19 @@
     {
       "name": "grade",
       "source": "./plugins/grade",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "Strict, evidence-driven software quality audit with fresh repo-context checks. Multi-domain scoring anchored to ISO/IEC 25010 (McCabe, NIST, SonarQube, OWASP). Full + diff modes, trend tracking, divergent-path findings, multi-language."
     },
     {
       "name": "rationalize",
       "source": "./plugins/rationalize",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Divergent-path analysis and convergence planning with fresh repo-context checks for duplicated workflows, contracts, APIs, schemas, services, UI paths, tests, and legacy/current code paths."
     },
     {
       "name": "bug-scrub",
       "source": "./plugins/bug-scrub",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Evidence-driven bug scrub for repositories and diffs, with fresh repo-context checks and optional bounded subagent analysis for large codebases."
     },
     {
@@ -35,7 +35,7 @@
     {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup."
     },
     {
@@ -53,25 +53,25 @@
     {
       "name": "frontend-pr-loop",
       "source": "./plugins/frontend-pr-loop",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "Autonomous frontend/UI improvement loop that clears stale context, chooses a bounded change, verifies it, delivers it through a merged PR, verifies target-branch post-merge CI, rebuilds running app containers, and rechecks."
     },
     {
       "name": "grade-loop",
       "source": "./plugins/grade-loop",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "End-to-end quality remediation loop that clears stale context, grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade."
     },
     {
       "name": "rationalize-loop",
       "source": "./plugins/rationalize-loop",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "End-to-end convergence remediation loop that clears stale context, rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize."
     },
     {
       "name": "implement-merge",
       "source": "./plugins/implement-merge",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases, delivers each phase with pr-delivery, and rebuilds already-running containers after completion."
     }
   ]

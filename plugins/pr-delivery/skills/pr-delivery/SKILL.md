@@ -25,6 +25,7 @@ This workflow supports two forge families:
 - Detect the target forge before opening, monitoring, or merging. Pick the provider that matches `git remote get-url origin`.
 - Never revert unrelated user changes. If unrelated dirty files exist, leave them alone or move the task to an isolated worktree.
 - Do not use broad destructive approvals. For cleanup commands that remove branches or worktrees, request exact one-off approval when the environment requires it.
+- Treat cleanup as owned-resource cleanup, not a repository sweep. Delete only the PR branch, remote branch, and temporary worktree proven to belong to this delivery or explicitly passed by a loop caller. Leave unrecognized, dirty, unmerged, or user-created branches/worktrees in place and report them.
 - Verify the merge by checking that the platform-reported merge commit is a real git object reachable from the target branch. Platform state such as `merged: true`, `mergedAt`, or `closed` is evidence, not proof.
 - When this skill is called by an autonomous loop skill, or when the user asks for final/target-branch CI verification, also wait for the target-branch CI run triggered by the merge commit before considering delivery complete.
 - For squash merges, verify the merge commit SHA, not the PR head SHA. The PR head SHA does not land on the target branch after a squash merge.
@@ -37,9 +38,11 @@ This workflow supports two forge families:
 
 1. Preflight the repo.
    - Run `git status --short`, `git branch --show-current`, `git show -s --format='%h %D %s' HEAD`, and inspect the diff.
+   - Record cleanup provenance: repo root, current worktree path, current branch, upstream, target branch, PR number if known, and any loop-owned branch/worktree names supplied by the caller.
    - Determine the target branch from the existing PR, the user's request, or the remote default branch. Do not hard-code `main` if the repo uses a different default.
    - Confirm the current branch is not the target/protected branch unless the user specifically asked to release from it.
    - Identify unrelated dirty files. If present, do not stage them.
+   - Run `git worktree list --porcelain` when operating from a temporary worktree or when a loop caller expects cleanup, so branch deletion and worktree removal happen from a safe checkout.
    - Review project instructions and task tracker requirements when the repo has them.
    - Detect the forge:
 
@@ -178,7 +181,7 @@ This workflow supports two forge families:
    **Non-queue protected-branch repos:**
 
    ```bash
-   gh pr merge <num> --auto --squash --delete-branch
+   gh pr merge <num> --auto --squash
    ```
 
    ### Forgejo command reference
@@ -314,6 +317,48 @@ This workflow supports two forge families:
    - Delete the local branch only after switching away from it and confirming the merge commit is reachable from the target branch and any required target-branch CI verification is green.
    - Remove temporary worktrees only after confirming they have no uncommitted changes.
    - Use exact cleanup commands; do not request persistent destructive approvals.
+   - Do not use `git branch -D` except for the verified squash-merge branch cleanup path below, or unless the user explicitly asks for that exact destructive cleanup after seeing the leftover state.
+   - Do not use `git worktree remove --force` or `rm -rf` for cleanup unless the user explicitly asks for that exact destructive cleanup after seeing the leftover state.
+
+   Cleanup checklist:
+
+   ```bash
+   git -C <repo> worktree list --porcelain
+   git -C <repo> status --short
+   git -C <pr-worktree> status --short
+   git -C <repo> fetch origin "$BASE_BRANCH"
+   git -C <repo> merge-base --is-ancestor "$MERGE_SHA" "origin/$BASE_BRANCH"
+   ```
+
+   Then, only for resources proven to belong to this delivery:
+
+   ```bash
+   git -C <repo> push origin --delete "$BRANCH"
+   git -C <repo> worktree remove <pr-worktree>
+   git -C <repo> switch "$BASE_BRANCH"
+   git -C <repo> branch -d "$BRANCH"
+   ```
+
+   For squash merges, `git branch -d "$BRANCH"` may refuse because the PR head
+   SHA is not an ancestor of the target branch. Use this exact fallback only
+   when the branch is owned by this delivery, the PR's platform-reported squash
+   merge commit is verified reachable from `origin/$BASE_BRANCH`, required
+   target-branch CI is green, no worktree has uncommitted changes, and the
+   branch tree matches the squash merge tree:
+
+   ```bash
+   git -C <repo> diff --quiet "$BRANCH" "$MERGE_SHA"
+   git -C <repo> branch -D "$BRANCH"
+   ```
+
+   Omit `worktree remove` when no temporary worktree was used. If the PR branch
+   is checked out in a temporary worktree, remove that clean worktree before
+   deleting the local branch. Use a clean non-PR checkout for local branch
+   deletion. If any command is unsafe because the branch is checked out
+   elsewhere, the checkout you would switch from is dirty, the branch contains
+   unmerged commits, files are dirty, or the resource is not owned by this
+   delivery, skip that cleanup item and report the exact path/branch left
+   behind.
 
 ## Final Response
 
