@@ -20,10 +20,10 @@ threadTitle: Feature Validation Loop
 artifactKey: feature-validation-ledger
 type: progress
 format: markdown
-status: needs_review
+status: approved
 metadata:
-  workStatus: in_progress
-  disposition: committed
+  workStatus: audit
+  disposition: audit
   sourcePath: docs/feature-validation/feature-validation-ledger.csv
   featureValidation:
     schemaVersion: 1
