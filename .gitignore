@@ -9,6 +9,13 @@ Thumbs.db
 *.swo
 *~
 
+# Python
+__pycache__/
+*.pyc
+
+# Prismatic Thread local config
+.prismatic-thread.yaml
+
 # Note: the grade plugin writes runtime history to ~/.claude/grade-history/
 # (user-scoped, outside the repo). No ignore pattern needed for it — it can't
 # end up inside this repo unless someone manually puts it there.
