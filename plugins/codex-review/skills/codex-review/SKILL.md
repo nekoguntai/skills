@@ -87,7 +87,7 @@ shell syntax:
 ${CLAUDE_SKILL_DIR}/scripts/codex-review -- npm test -- --runInBand
 ```
 
-Tradeoff: tests may force code changes that stale the review. If tests or review lead to code edits, rerun the affected tests and rerun review until no verified/actionable findings remain. Once that rerun exits cleanly, stop; do not spend another long review cycle on redundant confirmation.
+Tradeoff: tests may force code changes that stale the review. If tests or review lead to code edits, rerun the affected tests and rerun review until no verified/actionable findings remain.
 
 ## Context Efficiency
 
@@ -128,5 +128,3 @@ Include:
 - tests/proof run
 - findings accepted/rejected, briefly why
 - the clean review result from the final helper/review run, or why a remaining finding was consciously rejected
-
-Do not run another Codex review solely to improve the final report wording. If the final helper run exited 0 and produced no priority markers, report that exact run as clean.

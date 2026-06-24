@@ -7,9 +7,8 @@ description: End-to-end product behavior validation loop for application reposit
 
 ## Overview
 
-Use this skill to validate what an application actually implements. The source
-of truth is a single CSV ledger; Markdown, JSON, and HTML outputs are generated
-views.
+The source of truth is a single CSV ledger; Markdown, JSON, and HTML outputs are
+generated views.
 
 Default ledger path:
 

@@ -5,7 +5,7 @@ description: Identify divergent implementation paths with fresh repo-context che
 
 # Rationalize
 
-Use this skill to turn suspected divergence into decisions and a sequenced plan. The goal is not to eliminate every duplicate. The goal is to identify which paths are intentionally separate, which are safe to watch, and which should converge because they create drift risk or repeated change cost.
+The goal is not to eliminate every duplicate. The goal is to identify which paths are intentionally separate, which are safe to watch, and which should converge because they create drift risk or repeated change cost.
 
 Do not stop at a chat-only summary unless the user explicitly says not to write files. In a repository, write or update `docs/plans/rationalization-plan.md`. If `docs/plans/` does not exist, create it. Preserve useful prior decisions and status notes when updating an existing plan.
 

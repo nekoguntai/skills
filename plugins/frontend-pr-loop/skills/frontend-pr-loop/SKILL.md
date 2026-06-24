@@ -5,7 +5,7 @@ description: End-to-end autonomous frontend/UI improvement and PR delivery loop 
 
 # Frontend PR Loop
 
-Use this skill to run the recurring loop cleanly. A bare `$frontend-pr-loop` or "run the frontend PR loop" means autonomous delivery mode: inspect the frontend, choose a bounded improvement, make a short working plan, implement it, verify it, run a pre-delivery adversarial implementation review, use PR delivery through merge, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection, and clear stale context at startup and between PR passes without asking the user to proceed between phases.
+A bare `$frontend-pr-loop` or "run the frontend PR loop" means autonomous delivery mode: inspect the frontend, choose a bounded improvement, make a short working plan, implement it, verify it, run a pre-delivery adversarial implementation review, use PR delivery through merge, verify target-branch post-merge CI, rebuild already-running localhost app containers, rerun a bounded frontend inspection, and clear stale context at startup and between PR passes without asking the user to proceed between phases.
 
 Only stop after analysis when the user explicitly asks for recommendations, ideas, analysis, a review, a plan, or no changes.
 
@@ -118,7 +118,6 @@ Create a plan that is executable, not aspirational:
 
 Implement conservatively:
 
-- In autonomous loop mode, do not return recommendations and wait. Once there is enough evidence, choose a bounded slice and execute it.
 - Prefer existing primitives and local patterns over new abstractions.
 - Extract pure model builders and focused panels before changing visual behavior in large containers.
 - Add or update tests near the changed primitive/page.
@@ -138,8 +137,6 @@ npm run test:e2e:ci
 git diff --check
 git diff --cached --check
 ```
-
-Use focused tests first, then broaden based on risk.
 
 ## Pre-Delivery Adversarial Review
 
