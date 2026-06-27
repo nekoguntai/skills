@@ -47,6 +47,7 @@ Where `<plugin-name>` is one of the plugins listed below.
 | [`grade-loop`](plugins/grade-loop) | `/grade-loop:grade-loop` | End-to-end quality remediation loop that clears stale context, grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade. |
 | [`rationalize-loop`](plugins/rationalize-loop) | `/rationalize-loop:rationalize-loop` | End-to-end convergence remediation loop that clears stale context, rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize. |
 | [`implement-merge`](plugins/implement-merge) | `$implement-merge`, `/implement-merge:implement-merge` | Plan-to-merge execution loop that implements the newest plan in bounded phases, delivers each phase with pr-delivery, and rebuilds already-running containers after completion. |
+| [`scaffold`](plugins/scaffold) | `$scaffold`, `/scaffold:scaffold` | Portable CI scaffolding for GitHub and Forgejo repositories, with 100% coverage, quality/security gates, and protected PR-only merges. |
 
 <!-- Add new plugins here as rows. Each plugin needs:
      1. Its own directory under plugins/

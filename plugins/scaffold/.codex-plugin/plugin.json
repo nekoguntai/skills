@@ -1,0 +1,38 @@
+{
+  "name": "scaffold",
+  "version": "0.1.0",
+  "description": "Portable CI scaffolding with 100% coverage and protected PR-only merges.",
+  "author": {
+    "name": "skills-maintainers"
+  },
+  "homepage": "https://github.com",
+  "repository": "https://github.com",
+  "license": "MIT",
+  "keywords": [
+    "scaffold",
+    "ci",
+    "coverage",
+    "github",
+    "forgejo",
+    "branch-protection"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Scaffold",
+    "shortDescription": "Standardize repo CI and protection gates.",
+    "longDescription": "Portable repository scaffolding for GitHub and Forgejo projects. Adds or repairs deterministic CI, a hard 100% coverage gate, quality and security checks, and protected PR-only merge enforcement.",
+    "developerName": "skills-maintainers",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com",
+    "defaultPrompt": [
+      "Use $scaffold to harden this repo's CI.",
+      "Add 100% coverage and protected PR-only merges.",
+      "Scaffold GitHub or Forgejo CI for this project."
+    ]
+  }
+}

@@ -79,6 +79,12 @@
       "source": "./plugins/implement-merge",
       "version": "1.0.1",
       "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases, delivers each phase with pr-delivery, and rebuilds already-running containers after completion."
+    },
+    {
+      "name": "scaffold",
+      "source": "./plugins/scaffold",
+      "version": "0.1.0",
+      "description": "Portable CI scaffolding for GitHub and Forgejo repositories, with 100% coverage, quality/security gates, and protected PR-only merges."
     }
   ]
 }

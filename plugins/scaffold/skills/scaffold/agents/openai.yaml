@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scaffold"
+  short_description: "Standardize repo CI and protection gates"
+  default_prompt: "Use $scaffold to add a rigorous portable CI pipeline with 100% coverage and protected PR-only merges."

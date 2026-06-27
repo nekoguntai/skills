@@ -1,0 +1,10 @@
+{
+  "name": "scaffold",
+  "description": "Portable CI scaffolding for GitHub and Forgejo repositories, with 100% coverage and protected PR-only merges.",
+  "author": {
+    "name": "skills-maintainers"
+  },
+  "homepage": "https://github.com",
+  "repository": "https://github.com",
+  "license": "MIT"
+}
