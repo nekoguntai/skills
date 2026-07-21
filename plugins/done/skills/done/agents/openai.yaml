@@ -1,0 +1,4 @@
+interface:
+  display_name: "Done to Obsidian"
+  short_description: "Write completed work notes to Obsidian"
+  default_prompt: "Use $done to summarize this finished work and write it to Obsidian."

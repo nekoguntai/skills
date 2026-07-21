@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grade Loop"
+  short_description: "Audit, remediate, verify final CI, and regrade"
+  default_prompt: "Use $grade-loop to audit this repo, refine the remediation plan, implement it, deliver the PR, verify target-branch post-merge CI, rebuild running app containers, and rerun grade to decide whether another pass is needed."

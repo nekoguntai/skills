@@ -1,0 +1,10 @@
+{
+  "name": "done",
+  "description": "Capture completed work as a durable Obsidian session note.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

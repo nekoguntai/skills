@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rationalize"
+  short_description: "Plan convergence for divergent code paths"
+  default_prompt: "Use $rationalize to inspect divergent implementation paths and produce a convergence plan."

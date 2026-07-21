@@ -5,6 +5,8 @@ description: Iterative plan-file critique and refinement. Use when the user invo
 
 # Recursive Plan Review
 
+Use this skill to review one plan file, apply verified improvements, and repeat until a full pass finds no remaining actionable comments.
+
 This is plan review, not code review. Do not run `codex review` unless the user separately asks for code-diff review.
 
 ## Inputs

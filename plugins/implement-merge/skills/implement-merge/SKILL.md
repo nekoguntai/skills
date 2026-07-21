@@ -5,6 +5,8 @@ description: "Implement the most recently created plan end to end, clearing stal
 
 # Implement Merge
 
+Use this skill to turn the newest applicable plan into merged production code. The workflow is goal-driven and phase-oriented: establish the plan, implement one bounded phase at a time, merge it with `$pr-delivery`, then continue until the whole plan is complete.
+
 ## Startup
 
 1. Clear stale working context before acting.

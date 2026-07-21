@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visual Consistency Audit"
+  short_description: "Audit visual and navigation drift with evidence-backed fixes"
+  default_prompt: "Use $visual-consistency-audit to audit this app’s visual and cross-page navigation consistency and produce a prioritized fix plan."

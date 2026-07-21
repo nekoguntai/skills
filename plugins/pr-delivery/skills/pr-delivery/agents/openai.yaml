@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR Delivery"
+  short_description: "Ship, monitor, merge, verify CI, and clean up PRs"
+  default_prompt: "Use $pr-delivery to deliver this branch through PR checks, merge it safely, verify target-branch post-merge CI when requested, and clean up afterward."

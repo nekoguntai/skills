@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release"
+  short_description: "Cut releases or build missing release infrastructure through gates, tags, artifacts, and release objects"
+  default_prompt: "Use $release to cut the next patch release end to end, or add qualifiers for readiness, RC, release-infrastructure, artifact, or release-object work."

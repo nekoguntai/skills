@@ -1,0 +1,10 @@
+{
+  "name": "visual-consistency-audit",
+  "description": "Evidence-driven visual and navigation consistency auditing for application UIs.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

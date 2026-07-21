@@ -1,6 +1,6 @@
 {
   "name": "implement-merge",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases with context resets.",
   "author": {
     "name": "nekoguntai",

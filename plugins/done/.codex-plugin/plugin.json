@@ -1,0 +1,27 @@
+{
+  "name": "done",
+  "version": "0.1.0",
+  "description": "Capture completed Codex work as a durable Obsidian session note.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": ["obsidian", "session-notes", "documentation", "handoff"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Done",
+    "shortDescription": "Write completed work notes to Obsidian.",
+    "longDescription": "Captures completed Codex work as a concise, evidence-backed Obsidian note with verification, decisions, changed files, and follow-ups.",
+    "developerName": "nekoguntai",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write", "Execute"],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Use $done to record this completed work in Obsidian.",
+      "Wrap up this session as a durable Obsidian note."
+    ]
+  }
+}

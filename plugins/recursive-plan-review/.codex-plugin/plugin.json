@@ -1,6 +1,6 @@
 {
   "name": "recursive-plan-review",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Iterative plan-file critique and refinement until no actionable comments remain.",
   "author": {
     "name": "nekoguntai",

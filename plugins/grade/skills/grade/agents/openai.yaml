@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grade"
+  short_description: "Evidence-driven code quality audit"
+  default_prompt: "Use $grade to audit this repository and update the software quality report."

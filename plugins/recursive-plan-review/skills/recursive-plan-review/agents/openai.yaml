@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recursive Plan Review"
+  short_description: "Recursively refine plan files"
+  default_prompt: "Use $recursive-plan-review to review and refine this plan file until no actionable comments remain."

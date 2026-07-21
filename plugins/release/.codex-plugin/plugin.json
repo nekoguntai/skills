@@ -1,6 +1,6 @@
 {
   "name": "release",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Repository-native release execution and release-infrastructure remediation through gates, tags, artifacts, and publication checks.",
   "author": {
     "name": "nekoguntai",

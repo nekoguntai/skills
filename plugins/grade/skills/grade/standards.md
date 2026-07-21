@@ -50,6 +50,26 @@ Perfectly objective software quality grading is impossible without runtime data 
 
 The mechanical half is objective. The judged half is defensibly *grounded* — not objective, but not arbitrary either. The report tells you which is which on every row.
 
+## Improvement detection
+
+Trend and diff-vs-base comparisons do not change the scoring thresholds. They explain movement between audited states.
+
+Classify changes separately:
+
+- **Score movement**: total, grade, confidence, and domain point changes versus the previous history entry.
+- **Threshold crossing**: a signal moves into a different scoring bucket, such as duplication dropping below 3% or tests moving from fail to pass.
+- **Within-bucket improvement**: a directional signal improves without changing points, such as max CCN dropping from 22 to 17 while warning count remains in the same bucket.
+- **Evidence quality movement**: `unknown` becomes measured, or a previously measured signal becomes `unknown`.
+- **Diff-vs-base movement**: comparable changed-file deltas against the base ref, useful when the current absolute score still carries legacy debt.
+
+Directional mechanical signals:
+
+| Better when lower | Better when higher | Inspect, do not auto-credit |
+|---|---|---|
+| `security_high`, `secrets`, `largest_file_lines`, `lizard_warning_count`, `lizard_avg_ccn`, `lizard_max_ccn`, `duplication_pct`, `suppression_count`, `blocking_io_count`, `test_sleep_count` | `coverage`, `deploy_artifact_count`, `health_endpoint_count`, `observability_lib_present`, `validation_lib_present`, `test_file_count` | `timeout_retry_count`, `logging_call_count` |
+
+Never claim improvement from a raw count alone when scope or tooling changed. Label those rows as newly measured, lost evidence, or "inspect" unless the before/after scope is comparable. In diff mode, before/after deltas must be computed only from files that exist in both the base ref and current checkout; added or deleted files are scope changes, not directional quality deltas.
+
 ---
 
 # 🧱 ISO/IEC 25010 MAPPING
@@ -92,11 +112,9 @@ Every mechanical scoring rule in `SKILL.md` uses one of these. Each row cites it
 |---|---|---|
 | Average CCN per function | <7 = excellent, 7–10 = good, 10–15 = moderate, >15 = poor | McCabe 1976 ("A Complexity Measure", IEEE TSE); NIST Special Publication 500-235 |
 | Max CCN in any function | <15 = OK, 15–25 = concerning, >25 = strongly suggests refactor | NIST SP 500-235 recommends ≤10; SonarQube default warning at 15 |
-| Functions exceeding CCN 15 (`complexity_warning_count`) | 0 = excellent, 1–5 = good, 6–15 = moderate, >15 = poor | SonarQube "Cognitive Complexity" rule default |
+| Functions exceeding CCN 15 (`lizard -w` warning count) | 0 = excellent, 1–5 = good, 6–15 = moderate, >15 = poor | SonarQube "Cognitive Complexity" rule default |
 
 **Tool:** [lizard](https://github.com/terryyin/lizard) — supports C/C++, Java, C#, JavaScript, TypeScript, Objective-C, Python, Ruby, PHP, Scala, Go, Lua, Rust, Swift, Fortran, Kotlin, Solidity, Erlang, Zig, Perl, GDScript (30+ languages).
-
-**JS/TS accuracy note.** lizard's JavaScript/TypeScript parser is unreliable: it merges adjacent functions on multi-line generic signatures (summing their CCN into one inflated span) and barely parses `.tsx` (missing most React component functions), so its TS warning count is wrong in *both* directions. For Node/TS repos, `grade.sh` therefore computes `complexity_warning_count` from ESLint's AST-based [`complexity`](https://eslint.org/docs/latest/rules/complexity) rule (same McCabe threshold of 15, per-function accurate) whenever ESLint is resolvable, and records the chosen tool in `complexity_tool`. lizard remains the cross-language default and the fallback when ESLint is unavailable. The raw `lizard_warning_count` is still emitted for provenance/continuity.
 
 ### Duplication — `jscpd`
 

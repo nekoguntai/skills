@@ -5,8 +5,10 @@ description: End-to-end convergence remediation loop for a repository, with stal
 
 # Rationalize Loop
 
-Clear stale context at startup and between convergence passes. This is an
-execution loop, not a chat-only report.
+Use this skill to take a repository from divergence inventory to merged
+convergence remediation, green target-branch post-merge CI, and post-closeout
+loop checking. Clear stale context at startup and between convergence passes.
+This is an execution loop, not a chat-only report.
 
 ## Required Skill Order
 

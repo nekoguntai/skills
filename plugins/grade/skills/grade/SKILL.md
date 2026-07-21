@@ -5,7 +5,7 @@ description: Strict, evidence-driven software quality audit of the current repos
 
 # Grade
 
-Prefer evidence and repeatable signals over subjective impressions.
+Use this skill to produce a defensible software quality audit. Prefer evidence and repeatable signals over subjective impressions.
 
 Do not stop at a chat-only summary unless the user explicitly says not to write files. In a repository, write or update `docs/plans/codebase-health-assessment.md`. If `docs/plans/` does not exist, create it. Preserve useful prior status notes when updating an existing assessment.
 

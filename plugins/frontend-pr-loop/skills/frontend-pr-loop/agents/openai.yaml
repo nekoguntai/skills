@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend PR Loop"
+  short_description: "Autonomously improve UI, merge PRs, verify final CI, rebuild, and recheck."
+  default_prompt: "Run the frontend PR loop end to end: inspect the UI, choose a bounded improvement, implement it, verify it, open or update the PR, monitor checks, merge safely, verify target-branch post-merge CI, rebuild any already-running app containers, rerun a frontend loop check, and report the result."

@@ -5,8 +5,10 @@ description: "End-to-end quality remediation loop for a repository, with stale-c
 
 # Grade Loop
 
-Clear stale context at startup and between remediation passes. This is an
-execution loop, not a chat-only report.
+Use this skill to take a repository from quality audit to merged remediation,
+green target-branch post-merge CI, and post-merge local rebuild. Clear stale
+context at startup and between remediation passes. This is an execution loop,
+not a chat-only report.
 
 ## Required Skill Order
 

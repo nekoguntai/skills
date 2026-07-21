@@ -1,0 +1,28 @@
+{
+  "name": "visual-consistency-audit",
+  "version": "0.1.0",
+  "description": "Evidence-driven visual and navigation consistency auditing for application UIs.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": ["visual-consistency", "navigation", "accessibility", "ui-audit"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Visual Consistency Audit",
+    "shortDescription": "Audit visual and navigation drift with evidence.",
+    "longDescription": "Audits application UIs for visual drift, accessibility defects, responsive inconsistencies, and broken cross-page navigation continuity, then produces an evidence-backed semantic contract and remediation plan.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Analyze", "Write", "Execute"],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Audit this app for visual and navigation consistency.",
+      "Create an evidence-backed visual consistency fix plan.",
+      "Verify this UI against its semantic visual contract."
+    ]
+  }
+}

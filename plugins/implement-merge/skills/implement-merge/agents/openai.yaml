@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Merge"
+  short_description: "Implement a plan through merged PR phases"
+  default_prompt: "Use $implement-merge to implement and merge the most recent plan."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rationalize Loop"
+  short_description: "Converge paths, verify final CI, and rerun"
+  default_prompt: "Use $rationalize-loop to find divergent paths, review a convergence plan, implement a bounded phase, deliver the PR, verify target-branch post-merge CI, rebuild running app containers, and rerun rationalize for the next pass."

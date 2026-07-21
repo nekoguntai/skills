@@ -39,6 +39,15 @@ classify_rc() {
     *)   echo fail ;;
   esac
 }
+parse_lizard_max_ccn() {
+  awk '
+    /^[[:space:]]*[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+/ {
+      if (!found || $2 + 0 > max) max = $2 + 0
+      found = 1
+    }
+    END { print found ? max : "unknown" }
+  '
+}
 # Returns 0 if any file in the repo matches the glob (for stack detection).
 files_exist() {
   if has_cmd rg; then
@@ -298,38 +307,19 @@ if has_cmd lizard; then
   lizard_full=$(timeout_wrap lizard . 2>/dev/null || true)
   echo "$lizard_full" | tail -25
   # Warning count: functions exceeding CCN 15 (lizard default)
-  lizard_warning_count=$(timeout_wrap lizard -w . 2>/dev/null | grep -c "warning:" || echo 0)
+  lizard_warning_count=$(timeout_wrap lizard -w . 2>/dev/null | awk '/warning:/ { c++ } END { print c + 0 }')
   # Average CCN: parse the summary "Total" row
   # Last line with format: "<total_nloc> <avg_nloc> <avg_ccn> <avg_token> <fun_cnt> <warn_cnt> <fun_rt> <nloc_rt>"
   lizard_avg_ccn=$(echo "$lizard_full" \
     | awk '/^[[:space:]]*[0-9]+[[:space:]]+[0-9.]+[[:space:]]+[0-9.]+[[:space:]]+[0-9.]+[[:space:]]+[0-9]+[[:space:]]+[0-9]+[[:space:]]+[0-9.]+[[:space:]]+[0-9.]+/ {ccn=$3} END {print (ccn=="" ? "unknown" : ccn)}')
+  lizard_max_ccn=$(echo "$lizard_full" | parse_lizard_max_ccn)
 else
   echo "(lizard not installed — complexity scoring will be judged, not measured)"
   echo "Install: pip install lizard"
 fi
-
-# Authoritative warning count for scoring. lizard's JS/TS handling is unreliable:
-# its parser merges adjacent functions on multi-line generic signatures (summing
-# their CCN into one inflated span) and barely parses .tsx (missing most React
-# component functions). For Node/TS repos, prefer ESLint's AST-based `complexity`
-# rule (same McCabe threshold, per-function accurate) when ESLint is resolvable.
-# Falls back to the lizard count for other stacks or when ESLint is unavailable.
-complexity_warning_count="$lizard_warning_count"
-complexity_tool=lizard
-if $has_node && has_cmd npx && has_cmd jq; then
-  eslint_cx=$(timeout_wrap npx --no-install eslint . --rule '{"complexity":["error",15]}' --format json 2>/dev/null \
-    | jq '[.[].messages[]? | select(.ruleId=="complexity")] | length' 2>/dev/null || true)
-  if [ -n "$eslint_cx" ] && [ "$eslint_cx" != "null" ] && [ "$eslint_cx" -ge 0 ] 2>/dev/null; then
-    complexity_warning_count="$eslint_cx"
-    complexity_tool=eslint
-    echo "ESLint AST complexity — functions with CCN>15: $eslint_cx (lizard reported $lizard_warning_count)"
-  fi
-fi
-signal lizard_warning_count     "$lizard_warning_count"
-signal lizard_avg_ccn           "$lizard_avg_ccn"
-signal lizard_max_ccn           "$lizard_max_ccn"
-signal complexity_warning_count "$complexity_warning_count"
-signal complexity_tool          "$complexity_tool"
+signal lizard_warning_count "$lizard_warning_count"
+signal lizard_avg_ccn        "$lizard_avg_ccn"
+signal lizard_max_ccn        "$lizard_max_ccn"
 signal complexity_scope project
 
 # ==============================================================================

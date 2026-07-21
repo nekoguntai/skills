@@ -12,7 +12,7 @@ description: >-
 
 # PR Delivery
 
-The job is not done when the PR opens; it is done only after checks/reviews are handled, the merge is verified on the target branch, and local/remote/worktree cleanup is safe.
+Use this skill to take a branch from local changes to a merged PR with verified cleanup. The job is not done when the PR opens; it is done only after checks/reviews are handled, the merge is verified on the target branch, and local/remote/worktree cleanup is safe.
 
 This workflow supports two forge families:
 
