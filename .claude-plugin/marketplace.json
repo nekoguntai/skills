@@ -77,8 +77,14 @@
     {
       "name": "implement-merge",
       "source": "./plugins/implement-merge",
-      "version": "1.0.2",
-      "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases, delivers each phase with pr-delivery, and rebuilds already-running containers after completion."
+      "version": "1.0.3",
+      "description": "Plan-to-merge execution loop with nested caller-owned goals and explicit rebuild policies."
+    },
+    {
+      "name": "bug-scrub-loop",
+      "source": "./plugins/bug-scrub-loop",
+      "version": "0.1.0",
+      "description": "Resumable scrub-plan-fix-merge loop for eliminating confirmed P0-P2 defects."
     },
     {
       "name": "scaffold",

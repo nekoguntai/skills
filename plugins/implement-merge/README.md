@@ -4,7 +4,8 @@ Plan-to-merge execution loop for implementation plans. The skill clears stale
 context at startup and between PR phases, selects the newest plan, tracks it as
 an explicit goal, implements the plan in bounded phases, delivers each phase
 with `pr-delivery`, and rebuilds already-running local containers after the full
-plan has landed.
+plan has landed. Nested callers can retain ownership of the outer goal and
+select `after-plan`, `defer`, or `never` rebuild behavior.
 
 Ships one skill:
 

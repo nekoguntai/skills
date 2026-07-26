@@ -1,0 +1,38 @@
+{
+  "name": "bug-scrub-loop",
+  "version": "0.1.0",
+  "description": "Resumable scrub-plan-fix-merge loop for eliminating confirmed P0-P2 defects.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "bugs",
+    "remediation",
+    "planning",
+    "pull-request",
+    "verification"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Bug Scrub Loop",
+    "shortDescription": "Scrub, plan, merge fixes, and repeat.",
+    "longDescription": "Runs measured bug scrubs, reviews executable remediation plans, implements and merges confirmed P0-P2 fixes, and repeats against the original scope until a fresh pass is clean.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Use $bug-scrub-loop to eliminate confirmed P0-P2 bugs.",
+      "Run a dry bug scrub loop and review the proposed fix plan.",
+      "Resume the current bug scrub remediation loop."
+    ]
+  }
+}

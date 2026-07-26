@@ -1,7 +1,7 @@
 {
   "name": "implement-merge",
-  "version": "1.0.2",
-  "description": "Plan-to-merge execution loop that implements the newest plan in bounded phases with context resets.",
+  "version": "1.0.3",
+  "description": "Plan-to-merge execution loop with nested caller-owned goals and explicit rebuild policies.",
   "author": {
     "name": "nekoguntai",
     "url": "https://github.com/nekoguntai"
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Implement Merge",
     "shortDescription": "Implement plans through merged PR phases.",
-    "longDescription": "Plan-to-merge execution loop. Clears stale context at startup and between PR phases, finds the newest plan, creates an explicit goal, implements bounded phases, delivers each phase with pr-delivery, and rebuilds already-running local containers after completion.",
+    "longDescription": "Plan-to-merge execution loop. Clears stale context, implements bounded phases, delivers each through pr-delivery, and supports caller-owned goals with rebuild, defer, or never policies.",
     "developerName": "nekoguntai",
     "category": "Developer Tools",
     "capabilities": [
@@ -33,7 +33,7 @@
     "defaultPrompt": [
       "Use $implement-merge to implement and merge the most recent plan.",
       "Find the newest plan, reset context between PR phases, deliver each phase with $pr-delivery, then rebuild already-running containers.",
-      "Execute the latest plan through merged PRs and verify the completed goal."
+      "Execute a caller-owned plan with an explicit rebuild policy."
     ]
   }
 }

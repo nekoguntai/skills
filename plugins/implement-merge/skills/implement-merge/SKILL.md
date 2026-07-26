@@ -22,6 +22,13 @@ Use this skill to turn the newest applicable plan into merged production code. T
    - Set the goal objective to implement the selected plan completely.
    - Include the plan path and the intended phase sequence in the objective when possible.
    - If an active goal already exists, continue only if it matches the selected plan; otherwise ask before replacing direction.
+   - When a caller skill owns an active compatible goal and passes the exact
+     plan path as a nested stage, reuse that goal without creating, replacing,
+     or completing it. Record phase, PR, merge, verification, cleanup, and
+     rebuild evidence for the caller. The caller owns final goal status.
+   - Accept a nested `rebuild_policy` of `after-plan`, `defer`, or `never`.
+     Default standalone runs to `after-plan`. Require a nested caller to pass
+     the policy explicitly.
 
 ## Branch And Worktree Ownership
 
@@ -85,18 +92,41 @@ After each phase PR is merged and target-branch CI is verified, clear stale cont
 
 This reset is lightweight context hygiene, not destructive cleanup: do not reset the worktree, discard unrelated dirty files, rebuild containers, or restart services unless the user or repository instructions require it.
 
+## Rebuild Policy
+
+Apply the selected policy only after every plan phase is merged and verified:
+
+- `after-plan`: inspect running containers and rebuild the already-running
+  relevant stack through repository instructions.
+- `defer`: do not rebuild. Return whether relevant containers were running,
+  their current commit when discoverable, and the exact documented rebuild and
+  health/readiness commands so the caller can perform one later rebuild.
+- `never`: do not rebuild or start containers. Report that deployment
+  verification was intentionally skipped.
+
+Repository instructions or an acceptance gate that requires deployed-runtime
+verification may override `defer` or `never`; stop and report the conflict
+before deployment unless the caller already authorized that override.
+
 ## Completion
 
 When all phases and acceptance criteria are complete:
 
-1. Mark the active goal complete only after every required phase is merged and verified.
-2. Check whether containers are currently running on the system.
+1. Mark the active goal complete only after every required phase is merged and
+   verified. If this run is a nested stage under a caller-owned compatible
+   goal, do not change goal status; return completion evidence to the caller
+   instead.
+2. Check whether containers are currently running on the system unless the
+   policy is `never`.
    - Use a non-destructive container listing command, such as `docker ps` or the repository's documented compose status command.
    - If no containers are running, do not start new long-running services just for this skill.
-3. If containers are running, rebuild only the already-running relevant stack using the repository's documented command.
+3. If containers are running and the policy is `after-plan`, rebuild only the
+   already-running relevant stack using the repository's documented command.
    - Prefer project instructions, for example `docker compose up -d --build app worker` when that is the documented deployed app stack.
    - Verify the rebuilt services with the repository's documented health or readiness checks.
-4. Report the selected plan, merged PRs, merge commits, verification performed, container rebuild result, and any residual follow-up.
+4. For `defer`, return the running-state and deferred rebuild evidence to the
+   caller without mutating containers.
+5. Report the selected plan, merged PRs, merge commits, verification performed, container rebuild result or deferral, and any residual follow-up.
 
 ## Guardrails
 

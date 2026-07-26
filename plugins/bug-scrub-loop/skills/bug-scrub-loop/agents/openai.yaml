@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bug Scrub Loop"
+  short_description: "Scrub, plan, merge fixes, and repeat"
+  default_prompt: "Use $bug-scrub-loop --deploy final to scrub this repository, plan and merge all P0-P2 fixes, then repeat until a measured clean pass."

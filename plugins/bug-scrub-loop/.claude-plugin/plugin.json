@@ -1,6 +1,6 @@
 {
-  "name": "implement-merge",
-  "description": "Plan-to-merge execution loop with bounded phases, caller-owned nested goals, and explicit rebuild policies.",
+  "name": "bug-scrub-loop",
+  "description": "Resumable scrub-plan-fix-merge loop for eliminating confirmed P0-P2 defects.",
   "author": {
     "name": "nekoguntai"
   },
