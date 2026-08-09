@@ -41,7 +41,7 @@
     {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup."
     },
     {

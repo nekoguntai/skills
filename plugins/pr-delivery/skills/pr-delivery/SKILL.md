@@ -29,7 +29,7 @@ This workflow supports two forge families:
 - Verify the merge by checking that the platform-reported merge commit is a real git object reachable from the target branch. Platform state such as `merged: true`, `mergedAt`, or `closed` is evidence, not proof.
 - When this skill is called by an autonomous loop skill, or when the user asks for final/target-branch CI verification, also wait for the target-branch CI run triggered by the merge commit before considering delivery complete.
 - For squash merges, verify the merge commit SHA, not the PR head SHA. The PR head SHA does not land on the target branch after a squash merge.
-- On Forgejo, keep `delete_branch_after_merge: false` in API merge payloads. Delete branches yourself only after git ancestry verification passes.
+- On Forgejo, keep `delete_branch_after_merge: false` in API merge payloads, and never enable the repo-level `default_delete_branch_after_merge` setting. The repo setting fires on the platform's merge signal regardless of what any payload says, so a ghost merge deletes the head branch that is the only recovery path. Delete branches yourself only after git ancestry verification passes.
 - **Never combine `gh pr merge --auto --delete-branch` on a GitHub merge-queue repo**. The CLI can close the PR without merging and delete the branch as cleanup. On merge-queue repos, only ever use `gh pr merge <num> --auto` with no extra flags.
 - Do not delete a merge-queue PR branch before the queue merge has landed and been verified.
 - Prefer stable plain `gh ...` and `curl ...` commands. Avoid disposable env prefixes unless a command actually fails without them.
