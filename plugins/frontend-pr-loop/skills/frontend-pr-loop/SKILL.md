@@ -21,36 +21,103 @@ Only stop after analysis when the user explicitly asks for recommendations, idea
    - **Rebuild running containers:** after any delivered autonomous loop merge, rebuild only app containers that are already running locally. For standalone rebuild requests, rebuild only when explicitly requested.
 3. Preserve unrelated dirty work. Stage only task files. Never revert unrelated user changes.
 
-If the loop finds no credible frontend improvement worth making, report that with evidence and do not manufacture a PR.
+For autonomous, planning, implementation, or delivery work, resolve the
+`pr-delivery` skill and read its `references/loop-execution.md` and
+`references/loop-run-state.md` before delegating work, changing repository
+files, or creating Git resources. Follow the cheap-worker/strong-coordinator
+rules, API 1 inventory provider, and shared state helper. If required tooling is
+unavailable, stop before resource or repository mutation and report the
+blocker. Pure read-only recommendation/no-files requests do not initialize
+state, write reports/plans, or create cleanup work.
+
+## Run State And Cleanup Baseline
+
+For an authorized request that will write a plan, change code, create Git
+resources, or deliver changes, initialize one durable run outside every
+checkout and worktree before those writes or resource creation. Keep `repo_root`
+stable and capture the primary and any companion repository baselines first:
+
+```text
+python3 <pr-delivery-dir>/scripts/loop_state.py init --workflow frontend-pr-loop \
+  --path <state-path> --run-id <run-id> --repo-root <repo-root> \
+  --target-branch <target-branch> --current-sha <current-sha> \
+  --max-passes 2 [--companion-repo <repo-root> ...]
+```
+
+Read `loop-run-state.md` for the full schema and command forms. Use the helper's
+`replace`, `archive`, `verify-artifacts`, and `verify-cleanup` operations for
+state changes. Record each frontend inspection in the run's audit records with
+source SHA, outcome, and archived report/evidence; non-grade observations may
+have empty history. When invoked by an outer loop, inherit its `run_id`, `iteration`,
+`state_path`, `state_helper`, and `cleanup_policy: iteration-baseline`; never
+initialize a nested baseline or complete the caller's goal. Return
+exact-resource absence evidence to the caller, which owns whole-pass cleanup
+verification. Reserve every owned branch/worktree before creation, including
+worker, review, audit, delivery, and companion resources. Archive the inspected
+report/evidence, plan revisions, screenshots, and other evidence before
+removing their worktree; verify archive bytes and the latest source copy before
+cleanup. The helper records ownership but does not delete resources. Restore
+the original checkout assignment and require exact baseline equality before
+advancing, finishing, or deferring. Reuse the archived frontend inspection
+when the target SHA is unchanged; refresh it when the target advances.
+
+Apply the same live target-SHA and inventory gate after an initially clean
+inspection, after each delivery, and at pass-budget or scope deferral. No
+converted branch/worktree or leftover counts as successful cleanup. If cleanup
+would erase requested work or require a merge the request did not authorize,
+preserve the work and report a resumable cleanup blocker. When no resources were
+created, do not issue deletion commands or manufacture an ownership sweep.
+
+Local-only implementation and explicit plan requests preserve their desired
+edits in the permitted checkout and do not gain PR/merge authority. An external
+archive is recovery evidence, not a substitute for the requested plan, code,
+report, or screenshot output.
+
+## Worker Delegation And Delivery Grouping
+
+Use the larger capable model as coordinator. Delegate bounded frontend
+investigations, implementation slices, tests, and independent verification to
+cheaper suitable workers, preferring `gpt-6-luna` where available. Give each
+worker non-overlapping ownership, relevant source/plan SHA, constraints, and
+acceptance evidence. The coordinator confirms findings, inspects actual diffs,
+runs final verification on the integrated tree, and owns scope, state, delivery,
+and cleanup. Workers never push, open or merge PRs, edit the operational ledger,
+or delete shared resources. Reserve and settle worker resources before cleanup.
+Keep the adversarial reviewer independent from the implementation author; its
+single review gate does not limit other bounded delegation.
+
+Group all compatible changes selected for one pass into one reviewed delivery
+group and one PR where possible. Workers may produce separate local commits;
+the coordinator integrates them on one delivery branch, reviews the combined
+diff, and runs final combined gates. Split only for distinct repositories,
+incompatible permissions/protection, required deployment or migration
+sequencing, or a reviewed dependency/risk boundary. Record split reasons and
+order; internal phases and separate commits alone do not justify extra PRs.
+
+If the loop finds no credible frontend improvement worth making, archive the
+inspection evidence, record the clean result, and pass the shared live
+target-SHA and cleanup gate before finishing. Do not manufacture a PR.
 
 ## Pass Budget
 
-Run one autonomous delivery pass by default, then perform the post-closeout frontend loop check. If that check finds another major actionable frontend item, run at most one additional autonomous delivery pass unless the user explicitly asked for more passes or gave a larger budget.
+Run at most two autonomous delivery passes by default, with a post-closeout
+frontend inspection after each delivery. The durable `maxPasses` value is the
+bound. An initially clean inspection needs no delivery.
 
 After the autonomous follow-up budget is exhausted, report the next selected finding and stop with a deferral instead of opening an unbounded sequence of PRs.
 
 ## Branch And Worktree Ownership
 
-Maintain a cleanup ledger for resources created by autonomous mode:
-`target_branch`, `task_branch`, `worktree_path`, `created_by_loop`,
-`converted_to_next_pass`, and `cleanup_status`.
-
-- Use distinctive names such as `codex/frontend-pr-loop/<issue-slug>` for
-  implementation branches. Use the same slug in temporary worktree paths when
-  a worktree is necessary.
-- Prefer a normal task branch when the current worktree is clean enough. Use an
-  isolated worktree only to protect unrelated dirty work or to keep follow-up
-  pass work separate from the synced target branch.
-- Before creating a new worktree, run `git worktree list --porcelain` and
-  classify existing loop-owned worktrees. Remove only clean leftovers proven to
-  belong to this loop; leave dirty, unmerged, or unrecognized worktrees in place
-  and report them.
-- Pass the ledger to `$pr-delivery` so delivery cleanup targets the correct
-  remote branch, local branch, and temporary worktree after merge and
-  target-branch CI verification.
-- At final closeout, run one ownership sweep. Each loop-created branch/worktree
-  must be cleaned up, converted into the next pass branch, or listed as a
-  leftover with the exact reason it remains.
+The shared durable run state is the only ownership ledger. Use distinctive
+names such as `codex/frontend-pr-loop/<issue-slug>` and reserve each owned
+branch/worktree before creation. Preserve unrelated dirty work and never infer
+ownership from a branch prefix. Do not convert resources between passes or
+report leftovers as successful cleanup. After each delivery group and at final
+closeout, remove only safe resources proven to belong to this run and verify
+that original branch names and worktree assignments are restored exactly.
+Ordinary plan or code edits that create no Git resources may remain in a
+permitted pre-existing checkout as requested output; archive required evidence
+and preserve unrelated changes.
 
 ## Autonomous Loop Mode
 
@@ -58,13 +125,25 @@ In autonomous loop mode, run these phases without pausing for permission:
 
 1. Inspect the repo and current dirty state.
 2. Identify a small set of frontend findings with file references.
-3. Pick the highest-value bounded slice that can be completed safely in the current repo state.
+3. Pick a bounded set of compatible findings for one delivery group. Use the
+   shared coordinator/worker rules rather than concentrating routine analysis
+   and implementation on the coordinator.
 4. State the working plan briefly in commentary. If the slice is broad, changes shared primitives, or creates/updates a plan file, run `$recursive-plan-review` on the plan and apply verified comments before implementation.
 5. Run focused verification first, then broader checks based on blast radius.
 6. Run the pre-delivery adversarial implementation review and resolve verified findings.
-7. Use `$pr-delivery` to commit only relevant files, push, open/update the PR, monitor CI/reviews, fix failures, merge safely, verify target-branch ancestry, verify target-branch post-merge CI for the merge commit, and clean up.
+7. Integrate compatible worker changes on one owned delivery branch. Run final
+   combined verification, then use `$pr-delivery` for one PR for this pass
+   where possible: commit only relevant files, push, open/update, monitor
+   CI/reviews, fix failures, merge safely, verify target-branch ancestry and
+   post-merge CI, then clean up.
 8. Rebuild already-running localhost app containers after the verified merge and green target-branch CI.
-9. Run the between-pass context reset and ownership sweep, then run the post-closeout frontend loop check. If a major actionable item remains and the pass budget allows it, repeat from step 3 using a fresh branch from the synced target branch.
+9. Reconcile the target SHA, then reuse the archived inspection if it is still
+   for that exact SHA; otherwise run a fresh bounded inspection on the refreshed
+   target. Archive and register the post-closeout evidence, settle its workers
+   and any owned resources, then verify exact baseline restoration before a
+   clean exit, deferral, or pass advance. If a major actionable item remains
+   and the budget allows it, advance durable state and start a fresh pass from
+   new owned resources.
 
 Do not ask the user to choose among recommendations in autonomous mode. If several improvements are viable, pick the most defensible one and leave the rest as follow-up notes after delivery.
 
@@ -144,8 +223,10 @@ Use focused tests first, then broaden based on risk.
 ## Pre-Delivery Adversarial Review
 
 Before using `$pr-delivery` for implementation work, run this gate after local
-verification and before staging for commit. The loop invocation is explicit
-authorization for one bounded adversarial reviewer subagent for this gate only.
+verification and before staging for commit. The loop invocation authorizes one
+independent reviewer for this gate. That reviewer remains separate from the
+implementation author; this gate does not limit other bounded worker delegation
+under the shared execution contract.
 
 Spawn one fresh reviewer subagent and give it the minimum useful context:
 
@@ -230,14 +311,31 @@ If no matching localhost app containers are running, report that rebuild was ski
 
 ## Post-Closeout Frontend Loop Check
 
-After merge verification and any required localhost rebuild/health checks, rerun the read-only frontend analysis from the synced target branch.
+After merge verification and any required localhost rebuild/health checks,
+reconcile the live target SHA. If the latest archived frontend inspection is
+still for this exact SHA, reuse it; do not repeat the same inspection.
+Otherwise run a fresh bounded frontend inspection from the synced target
+branch. Archive and register its report/evidence and audit record before cleanup. Use an owned
+worktree only when the inspection or report mutates repository files. Settle
+workers and owned resources, then verify exact baseline restoration before any
+pass advance, clean exit, or deferral.
 
 Use the same selection standard as autonomous mode:
 
-- If no credible major frontend improvement remains, record that result and finish.
-- If a major actionable frontend item remains, is feasible in another bounded PR, and the pass budget allows another autonomous delivery, start another loop from a fresh branch using that selected item.
-- If remaining issues are too broad, speculative, blocked by product decisions, or intentionally deferred, record the blocker or deferral and stop instead of forcing an unsafe PR.
-- If a major actionable item remains after the pass budget is exhausted, record it as the next deferred phase and stop rather than opening another PR.
+- If no credible major frontend improvement remains, record that result,
+  preserve requested output, and complete the shared cleanup gate before
+  finishing.
+- If a major actionable frontend item remains, is feasible in another bounded
+  PR, and the pass budget allows another autonomous delivery, verify cleanup
+  and advance durable state before reserving fresh resources for the next pass.
+  Group compatible selected changes into one reviewed PR where possible.
+- If remaining issues are too broad, speculative, blocked by product decisions,
+  or intentionally deferred, record the blocker or deferral, archive required
+  evidence, and pass the shared cleanup gate. If cleanup is unsafe, retain the
+  work and report a resumable blocker instead of forcing an unsafe PR.
+- If a major actionable item remains after the pass budget is exhausted, record
+  it as the next deferred phase, archive it, and pass the same shared live
+  cleanup gate before stopping rather than opening another PR.
 
 Do not keep looping indefinitely on low-evidence recommendations, purely aesthetic preferences, or previously rejected/deferred findings.
 
@@ -251,7 +349,7 @@ Report concisely:
 - implementation changes and verification commands;
 - PR number/link, forge type, merge commit, and ancestry verification;
 - target-branch post-merge CI run and result;
-- branch/worktree cleanup;
+- whether every pass restored the original branch and worktree inventory;
 - container rebuild command and health/readiness results, or why rebuild was skipped;
 - post-closeout frontend loop result and whether another pass was skipped, deferred, or completed;
 - pass budget used and residual risks.

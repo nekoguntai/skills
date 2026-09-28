@@ -17,9 +17,11 @@ Use these skills in order:
 1. `rationalize` for the initial divergence inventory, canonical-path decisions,
    convergence plan, and post-closeout loop check.
 2. `recursive-plan-review` for the convergence plan file before implementation.
-3. One adversarial implementation review subagent after local verification and
-   before `pr-delivery`.
-4. `pr-delivery` for commit, PR, CI monitoring, merge verification,
+3. Cheap bounded workers for independent discovery, implementation, and test
+   slices; coordinator-owned integration and verification.
+4. One independent adversarial implementation review after local verification
+   and before `pr-delivery`.
+5. `pr-delivery` for commit, PR, CI monitoring, merge verification,
    target-branch post-merge CI verification, and cleanup.
 
 Use `grade` only as supporting evidence when it helps prove quality movement,
@@ -28,6 +30,82 @@ when the convergence touched broad shared behavior.
 
 Open each referenced skill's `SKILL.md` when reaching that phase and follow its
 rules. Do not substitute a lighter workflow when the user asked for the loop.
+Before delegating work or creating any Git resource, resolve the `pr-delivery`
+skill and read its `references/loop-execution.md` and
+`references/loop-run-state.md`. Follow their cheap-worker/strong-coordinator
+rules, API 1 inventory provider, and shared state helper. If required tooling is
+unavailable, stop before creating resources or changing repository files and
+report the blocker.
+
+## Run State And Cleanup Baseline
+
+For an authorized loop that will write a plan, create Git resources, or deliver
+changes, initialize one durable run outside every checkout and worktree before
+any such write or resource creation. Keep `repo_root` stable and capture the
+primary and companion repository baselines before reserving resources:
+
+```text
+python3 <pr-delivery-dir>/scripts/loop_state.py init --workflow rationalize-loop \
+  --path <state-path> --run-id <run-id> --repo-root <repo-root> \
+  --target-branch <target-branch> --current-sha <current-sha> \
+  --max-passes 2 [--companion-repo <repo-root> ...]
+```
+
+Read `loop-run-state.md` for supported fields and command forms. Use only the
+helper's `replace`, `archive`, `verify-artifacts`, and `verify-cleanup`
+operations to update state and evidence. Record each rationalization observation
+with its source SHA, outcome, and archived plan/report or evidence; non-grade
+observations may have empty history. When invoked by an outer loop, inherit
+its `run_id`, `iteration`, `state_path`, `state_helper`, and
+`cleanup_policy: iteration-baseline`; never initialize a nested baseline or
+complete the caller's goal. Return exact-resource absence evidence to the
+caller, which owns whole-pass cleanup verification. Reserve every owned branch and
+worktree before creation, including worker, review, audit, delivery, and
+companion resources. Archive every plan revision and any report, history,
+screen capture, or other evidence needed after its worktree is removed. Verify
+archive bytes and the latest source copy before cleanup. The helper does not
+delete resources; follow the shared cleanup contract and let the coordinator
+restore the original branch and worktree assignments and verify exact baseline
+equality.
+
+Run the live target-SHA and whole-inventory gates before consuming a rationalize
+result, advancing a pass, and any clean, deferred, or no-actionable exit. A
+no-actionable initial result and pass-budget deferral require the same cleanup
+gate as a merged pass. Preserve an unchanged-target archived rationalization
+result for a follow-up instead of repeating the full inspection. If the target
+SHA changed, refresh the inspection before making a new plan decision.
+Unfinished unsafe cleanup is blocked with its exact reason; converted resources
+or leftovers are not successful cleanup.
+
+Strict read-only recommendation requests and explicit no-files/no-changes
+requests do not initialize state, write reports or plans, or create cleanup
+work. A standalone plan request preserves its requested plan output but does not
+gain PR or merge authority. Local-only implementation likewise does not gain
+PR/merge authority; preserve desired edits in the permitted checkout. If
+restoring resources safely would erase requested work or require unauthorized
+delivery, retain it and report a cleanup blocker.
+
+## Worker Delegation And Delivery Grouping
+
+Use the larger capable model as coordinator and delegate bounded discovery,
+focused investigations, implementation slices, tests, and independent
+verification to cheaper suitable workers, preferring `gpt-6-luna` where
+available. Give each worker non-overlapping ownership, the relevant source and
+plan SHA, constraints, and acceptance evidence. The coordinator confirms
+findings, inspects actual diffs, runs final verification on the integrated tree,
+and owns state transitions, delivery, and cleanup. Workers do not push, open or
+merge PRs, edit the operational ledger, or delete shared resources. Settle all
+worker resources before cleanup. The adversarial reviewer remains independent
+from the implementation author and is limited to that review gate; that limit
+does not restrict other bounded worker delegation.
+
+Group all compatible selected changes into one reviewed delivery group and one
+PR per pass where possible. Workers may provide separate commits; the
+coordinator integrates and verifies the combined result. Split only for
+distinct repositories, incompatible permissions/protection rules, required
+deployment or migration sequencing, or a reviewed dependency/risk boundary.
+Record the reason and order for each split. A companion private-plans
+repository remains a separate delivery where required.
 
 ## Preflight
 
@@ -45,27 +123,18 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
 
 ## Branch And Worktree Ownership
 
-Maintain a cleanup ledger for every branch or worktree this loop creates:
-`target_branch`, `task_branch`, `loop_check_branch`, `worktree_path`,
-`created_by_loop`, `converted_to_next_pass`, and `cleanup_status`.
-
-- Use distinctive names: `codex/rationalize-loop/<area-slug>` for
-  implementation work and `codex/rationalize-loop-check/<area-slug>` for
-  post-closeout rationalize checks. Use the same slug in temporary worktree
-  paths when worktrees are necessary.
-- Prefer a normal task branch when the current worktree is clean enough. Use an
-  isolated worktree only to protect unrelated dirty work, keep companion plan
-  edits isolated, or keep a plan-mutating loop check off the synced target
-  branch.
-- Before creating a new worktree, run `git worktree list --porcelain` and
-  classify existing loop-owned worktrees. Remove only clean leftovers that are
-  proven to belong to this loop and no longer hold a selected next pass. Leave
-  dirty, unmerged, or unrecognized worktrees in place and report them.
-- Pass the ledger to `pr-delivery` during Phase 5 so delivery cleanup targets
-  the right remote branch, local branch, and temporary worktree.
-- At final closeout, run one ownership sweep. Each loop-created branch/worktree
-  must be cleaned up, converted into the next task branch, or listed as a
-  leftover with the exact reason it remains.
+The shared durable run state is the only ownership ledger. Use distinctive
+names such as `codex/rationalize-loop/<area-slug>` and
+`codex/rationalize-loop-check/<area-slug>`; reserve each owned branch and
+worktree in the state before creation. Keep plans and inspection outputs in the
+owned branch or worktree when they mutate repository files. Preserve unrelated
+dirty work and never infer ownership from a branch prefix. Do not convert
+resources between passes or report leftovers as successful cleanup. At every
+pass boundary and closeout, remove only safe resources proven to belong to this
+run and verify the original branch names and worktree assignments are restored
+exactly. Ordinary in-place plan edits that create no Git resources may remain
+in the permitted checkout as requested output; archive the plan and preserve
+unrelated changes.
 
 ## Context Reset Discipline
 
@@ -96,10 +165,9 @@ repository instructions or the user require it.
 
 ## Pass Budget
 
-Run one delivery pass by default, then perform the post-closeout rationalize
-check. If that check finds another major actionable convergence item, run at
-most one additional autonomous delivery pass unless the user explicitly asked
-for more passes or gave a larger budget.
+Run at most two delivery passes by default, with a post-closeout rationalize
+check after each delivery. The durable `maxPasses` value is the bound. An
+initial clean result needs no delivery.
 
 After the autonomous follow-up budget is exhausted, report the next selected
 finding and stop with a deferral instead of opening an unbounded sequence of
@@ -116,7 +184,8 @@ Let it write or update a plan file, defaulting to
 location. If the plan contains private operational details, use the repo's
 private-plans location when documented.
 
-After rationalizing, extract only major actionable convergence items:
+After rationalizing, archive the plan/report evidence and extract only major
+actionable convergence items:
 
 - `remove` items with no callers or clearly retired support first;
 - then `converge` items where drift risk, repeated change cost, or trust-boundary
@@ -125,9 +194,10 @@ After rationalizing, extract only major actionable convergence items:
 - exclude `keep separate`, `watch`, speculative, low-evidence, and broad
   cleanup recommendations.
 
-If no major actionable converge/remove item exists, record the result and stop
-the implementation/PR portion unless the user explicitly wants a no-op
-documentation PR.
+If no major actionable converge/remove item exists, record the result, preserve
+the requested canonical plan, and complete the same live target-SHA and
+whole-inventory cleanup gate required by a delivered pass. Then stop without
+manufacturing a PR.
 
 If the next step requires a product, compatibility, data-retention, or external
 client decision that cannot be inferred from source or project docs, record the
@@ -151,9 +221,11 @@ The reviewed plan must include:
 - acceptance criteria proving drift risk or repeated change cost was reduced;
 - explicit deferred findings with reasons.
 
-Keep the phase bounded to what can reasonably be implemented and merged in one
-PR. If multiple unrelated convergence opportunities exist, choose the smallest
-coherent high-impact slice and defer the rest explicitly.
+Keep the pass bounded, and group all compatible selected findings into one
+reviewed delivery group and one PR where possible. Split only for distinct
+repositories, incompatible permission/protection rules, required deployment or
+migration sequencing, or a reviewed dependency/risk boundary. Record the reason
+and order for each split; defer unrelated backlog explicitly.
 
 ## Phase 3 - Recursive Plan Review
 
@@ -186,10 +258,12 @@ Implement the reviewed convergence phase exactly as scoped.
 ## Phase 4.5 - Adversarial Implementation Review
 
 Before using `pr-delivery`, run this gate after local verification and before
-staging for commit. The loop invocation is explicit authorization for one
-bounded adversarial reviewer subagent for this gate only.
+staging for commit. Use one independent adversarial reviewer for this gate.
+This reviewer-specific gate does not restrict the bounded worker delegation
+defined by the shared execution contract.
 
-Spawn one fresh reviewer subagent and give it the minimum useful context:
+Spawn one fresh independent reviewer for this gate, following shared worker
+routing, and give it the minimum useful context:
 
 - rationalization plan path, selected converge/remove decisions, and non-goals;
 - current diff, changed files, and any updated plan statuses;
@@ -293,38 +367,44 @@ Verify:
 ## Phase 7 - Post-Closeout Rationalize Loop Check
 
 After merge verification and any required localhost rebuild/health checks,
-create a fresh loop-check branch or temporary worktree from the synced target
-branch, then rerun the `rationalize` skill there. Do not run a plan-mutating
-post-closeout rationalize pass directly on the target branch.
+settle delivery resources and verify the target SHA. If a post-closeout
+rationalize inspection will mutate the plan, reserve a fresh owned branch or
+worktree from the synced target branch before running it; never run a
+plan-mutating inspection directly on the target branch. If the latest archived
+rationalization result is still for this exact target SHA, reuse it rather than
+repeating the full inspection.
 
 If the chosen rationalization plan lives in a companion private-plans repo, use
 the same branch/worktree and cleanup discipline there before letting the
 post-closeout check modify that plan.
 
-Let it update the chosen rationalization plan file again. Then inspect the
-refreshed plan for major actionable `converge` or `remove` items using the same
-selection rules from Phase 1:
+Archive the resulting plan/report evidence and inspect the refreshed plan for
+major actionable `converge` or `remove` items using the same selection rules
+from Phase 1. Verify the shared cleanup gate before any advance or exit:
 
-- If no major actionable converge/remove item remains, record that result and
-  clean up the generated loop-check branch/worktree, convert it into the next
-  task branch, or report it as a leftover with the exact reason so the target
-  branch remains clean, then finish.
+- If no major actionable converge/remove item remains, record the result,
+  preserve the requested plan, complete the shared cleanup gate, and finish.
 - If a major actionable item remains, is feasible in another bounded PR, and the
-  pass budget allows another autonomous delivery, keep or rename the
-  loop-check branch as the next task branch, repeat Preflight, then start
-  another loop at Phase 2 using the updated plan.
+  pass budget allows another autonomous delivery, complete the current cleanup
+  gate and advance durable state with `replace`, then reserve a fresh
+  pass branch/worktree from the synced target. Never carry or rename the
+  loop-check branch into the next pass. Start Phase 2 using the updated plan
+  when the target SHA is unchanged; refresh rationalization evidence first if
+  it advanced.
 - If remaining convergence depends on user/product/compatibility decisions,
   broad rewrites, low-evidence assumptions, or intentionally separate paths,
-  record the blocker or deferral, clean up generated loop-check dirt, and stop
-  instead of forcing an unsafe PR.
+  record the blocker or deferral and archive required evidence. A deliberate
+  budget/scope deferral passes the shared live cleanup gate; unsafe cleanup
+  remains blocked with its exact reason. Stop instead of forcing an unsafe PR.
 - If a major actionable item remains after the pass budget is exhausted, record
   it as the next deferred phase and stop rather than opening another PR.
 
-For loop-check cleanup, discard only files that this Phase 7 rationalize pass
-generated or modified on the loop-check branch, such as the refreshed
-rationalization plan, and only when the branch is not being converted into the
-next task branch. Do not restore unrelated files or remove a dirty worktree
-whose dirty state is not fully explained by this loop-check pass.
+Before cleanup, archive and verify every plan/report revision. Preserve the
+canonical plan in the repository or its authorized companion delivery; an
+external archive is recovery evidence, not a replacement for requested output.
+Remove only files and Git resources owned by this run when safe. If restoring
+the original checkout assignment would overwrite unrelated or requested work,
+preserve it and report a cleanup blocker rather than erasing it.
 
 Do not keep looping indefinitely on `watch`, `keep separate`, or previously
 rejected/deferred findings. Each additional pass must select a concrete,
@@ -347,6 +427,5 @@ Report concisely:
   skipped;
 - post-closeout rationalize-loop result and whether another pass was skipped,
   deferred, or completed;
-- pass budget used and whether a generated loop-check branch/worktree was
-  cleaned up or converted into the next task branch;
+- pass budget used and whether each pass restored the original inventory;
 - deferred/watch/keep-separate findings and decisions still needing user input.

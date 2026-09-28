@@ -8,6 +8,14 @@ actual remote branch names, and worktree paths/branch assignments in every
 participating repository. Commit SHAs may advance. Equal counts alone do not
 prove preservation.
 
+## Provider
+
+The inventory and ownership implementation is shared with grade-loop through
+pr-delivery's API 1 `scripts/loop_cleanup` package. Set `PR_DELIVERY_SKILL_DIR`
+to the resolved pr-delivery skill directory before calling the state helper.
+The local `git_inventory.py` is a compatibility CLI/API wrapper, not a duplicate
+collector. Existing schema-2 state needs no migration for this extraction.
+
 ## Capture before creation
 
 Schema 2 `run_state.py init` captures the primary repository and each repeated

@@ -9,6 +9,21 @@ Drive one repository from evidence-backed bug discovery to a verified clean
 P0-P2 termination gate. Preserve `$bug-scrub` as the analysis primitive and
 use this skill only for the autonomous orchestration layer.
 
+## Worker Models And Delivery Groups
+
+Before dispatching workers or creating resources, resolve `$pr-delivery` and
+read its `references/loop-execution.md`. Use cheaper workers (prefer
+`gpt-6-luna` when available) for bounded discovery, implementation, tests, and
+independent review. The larger coordinator verifies source evidence, actual
+diffs, and final combined tests, and owns integration, state, delivery, and
+cleanup. Workers do not push or create PRs. Escalate only an evidence-backed
+hard slice; do not default routine work to the coordinator's model.
+
+Prefer one PR containing all compatible changes selected for a pass, retaining
+separate worker commits and regression evidence. Internal phases/finding counts
+do not require separate PRs. Split only for a documented repository, protection,
+rollout/migration, or risk constraint. Preserve scope, review, CI, and permissions.
+
 ## Invocation Contract
 
 Treat a bare `$bug-scrub-loop` invocation as explicit authorization to:
@@ -63,7 +78,8 @@ Read and follow these skills at the stage where each becomes active:
 1. `$bug-scrub` for every discovery pass.
 2. `$recursive-plan-review` for every non-empty remediation plan.
 3. `$implement-merge` for every reviewed plan selected for execution.
-4. `$pr-delivery` through `$implement-merge` for each mergeable phase.
+4. `$pr-delivery` through `$implement-merge` for each reviewed delivery group,
+   normally one PR for the pass.
 
 Pass the exact plan path to `$recursive-plan-review` and `$implement-merge`.
 Never rely on "newest plan" discovery when this loop already owns a plan.
@@ -90,6 +106,14 @@ The loop owns goal completion: when `$implement-merge` runs as a nested stage,
 use its caller-owned-goal contract. It must reuse but neither replace nor
 complete the outer goal. Complete it only after the final fresh scrub satisfies
 the termination gate.
+
+## Shared Cleanup Dependency
+
+Resolve `$pr-delivery` before state-helper use and set
+`PR_DELIVERY_SKILL_DIR` to its actual skill directory. Its
+`scripts/loop_cleanup` provider must expose API 1. The loop's inventory entry
+point forwards to that provider; bug-specific coverage, delivery, and state
+schema rules remain here. Missing/incompatible providers block mutation.
 
 ## Mandatory Cleanup Gate
 
@@ -290,9 +314,10 @@ The plan must include:
   and
 - an explicit statement that P3 backlog is outside the blocking fix set.
 
-Group only findings that share an implementation boundary or must land
-atomically. Do not hide unrelated refactors, speculative hardening, or product
-policy decisions inside the plan.
+Group all compatible selected fixes for this pass into one delivery PR when
+possible, with independently reviewable commits and per-finding tests. Explain
+any required split in the reviewed plan. Do not hide unrelated refactors,
+speculative hardening, or product policy decisions inside the plan.
 
 Persist every new plan in run state as `draft` before review. A new reviewed
 implementation commit must increase `reviewPasses` before the plan may advance
@@ -328,9 +353,10 @@ path.
   - `--deploy each-plan` -> `rebuild_policy: defer`, then let this outer loop
     perform the crash-safe rebuild immediately after the plan completes;
   - `--deploy never` -> `rebuild_policy: never`.
-- Implement in the plan's smallest mergeable phases.
+- Implement bounded internal phases with cheap workers; integrate compatible
+  selected phases into one reviewed delivery group.
 - Require behavioral regression tests and adversarial implementation review.
-- Use `$pr-delivery` for each phase and wait for required PR and target-branch
+- Use `$pr-delivery` for each delivery group and wait for required PR and target-branch
   checks.
 - Persist each newly opened PR as `open` before later head, merge, target-CI,
   and closure transitions.

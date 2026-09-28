@@ -34,6 +34,29 @@ This workflow supports two forge families:
 - Do not delete a merge-queue PR branch before the queue merge has landed and been verified.
 - Prefer stable plain `gh ...` and `curl ...` commands. Avoid disposable env prefixes unless a command actually fails without them.
 
+## Loop Callers
+
+Read `references/loop-execution.md` when called by an iterative workflow. It
+requires cheaper bounded workers with larger-coordinator verification, one PR
+per pass where compatible, and original-baseline cleanup. The generic durable
+helper is `scripts/loop_state.py`; read `references/loop-run-state.md` before
+using it. A nested delivery inherits its caller's `state_helper` and
+`state_path`; never start a second baseline or assume the caller uses the
+generic schema (bug-scrub has a stricter adapter). The coordinator alone owns
+integration, protected merge, and exact resource deletion.
+
+## Shared Cleanup Provider
+
+`scripts/loop_cleanup` is the canonical read-only Git inventory and ownership
+library (API 1) for caller loops. It captures local branch names, actual remote
+heads, and worktree assignments; verifies immutable baselines; and validates
+resource transitions. Each loop retains its own workflow and completion policy.
+Callers must resolve this skill directory and set `PR_DELIVERY_SKILL_DIR` for
+state-helper invocations. Missing/incompatible providers block those loops
+before repository writes; never substitute cached remote-tracking refs or a
+second inventory implementation. Standalone PR delivery does not require a
+whole-repository baseline or adopt a loop's state schema.
+
 ## Caller-Owned Iteration Cleanup
 
 When a caller supplies `cleanup_policy: iteration-baseline`, inherit its

@@ -9,6 +9,32 @@ Use this skill to review one plan file, apply verified improvements, and repeat 
 
 This is plan review, not code review. Do not run `codex review` unless the user separately asks for code-diff review.
 
+## Delegated Loop Execution
+
+Read the resolved `pr-delivery` skill's `references/loop-execution.md` before
+iterative work. Delegate bounded research, implementation (when authorized),
+and focused verification to cheaper workers, preferably `gpt-6-luna` when
+available. The larger coordinator checks source evidence, diffs, and verification
+outputs and owns decisions, integration, delivery, and cleanup. Preserve the
+independent review and stopping rules below; never treat worker claims as proof.
+
+For authorized delivery, combine compatible changes selected for a pass into
+one reviewed PR with separate worker commits where useful. Split only for a
+recorded repository, protection, rollout/migration, or genuine risk constraint.
+This policy does not authorize implementation, PRs, merges, or publication for
+read-only, plan-only, readiness, or local-only requests.
+
+If nested, inherit the caller's operational ledger and `state_helper`; do not
+create another baseline or complete its goal. When standalone work creates Git
+resources, use `pr-delivery/scripts/loop_state.py init --workflow recursive-plan-review`
+and `references/loop-run-state.md` before creation: capture the starting
+inventory, reserve owned resources, archive evidence, and verify live restoration
+at each delivery-group boundary and final/deferral exit. Use no arbitrary pass
+cap unless the user sets one. Do not carry converted resources into another
+pass. Preserve unfinished work with a cleanup blocker rather than deleting it
+or claiming completion. If no Git resources are created, preserve requested
+in-place outputs; strict read-only work creates no state or artifacts.
+
 ## Inputs
 
 - Require a concrete plan file path. If the user gives none and there is exactly one obvious active plan, use it; otherwise ask for the path.
@@ -20,10 +46,13 @@ This is plan review, not code review. Do not run `codex review` unless the user 
 Repeat these steps until the stopping rule is met:
 
 1. Read the whole plan file and identify its goal, assumptions, phases, dependencies, verification steps, and completion criteria.
-2. Verify likely weak spots against source evidence when available. Prefer `rg`, focused file reads, tests, docs, and existing project instructions over speculation.
+2. Delegate bounded plan/source checks to cheaper reviewers with non-overlapping
+   scopes; the coordinator independently verifies candidate comments against
+   source evidence when available. Prefer `rg`, focused file reads, tests, docs, and existing project instructions over speculation.
 3. Produce candidate comments covering stale facts, missing prerequisites, unsafe sequencing, scope creep, vague acceptance criteria, weak verification, hidden migration/backout needs, and avoidable complexity.
 4. Filter candidates. Accept only comments that are actionable, evidence-backed, and improve correctness, clarity, risk handling, sequencing, or verifiability.
-5. Edit the plan file directly for accepted comments when editing is allowed. Keep changes minimal, preserve useful structure, and avoid unrelated rewriting.
+5. Have one owner apply accepted plan edits when editing is allowed; the
+   coordinator re-reads the resulting plan. Keep changes minimal, preserve useful structure, and avoid unrelated rewriting.
 6. Record rejected comments briefly when they are plausible but not worth applying, especially when they are preference-only, speculative, already covered, contradicted by evidence, or outside scope.
 7. Re-read the updated plan and begin the next pass.
 

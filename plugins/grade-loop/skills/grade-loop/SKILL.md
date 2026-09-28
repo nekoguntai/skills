@@ -10,6 +10,21 @@ green target-branch post-merge CI, and post-merge local rebuild. Clear stale
 context at startup and between remediation passes. This is an execution loop,
 not a chat-only report.
 
+## Worker Models And Delivery Groups
+
+Before dispatching workers or creating resources, resolve `$pr-delivery` and
+read its `references/loop-execution.md`. Use cheaper workers (prefer
+`gpt-6-luna` when available) for bounded discovery, implementation, tests, and
+independent review. The larger coordinator verifies source evidence, actual
+diffs, and final combined tests, and owns integration, state, delivery, and
+cleanup. Workers do not push or create PRs. Escalate only an evidence-backed
+hard slice; do not default routine work to the coordinator's model.
+
+Prefer one PR containing all compatible changes selected for a pass, retaining
+separate worker commits and regression evidence. Internal phases/finding counts
+do not require separate PRs. Split only for a documented repository, protection,
+rollout/migration, or risk constraint. Preserve scope, review, CI, and permissions.
+
 ## Required Skill Order
 
 Use these skills in order:
@@ -24,6 +39,73 @@ Use these skills in order:
 
 Open each referenced skill's `SKILL.md` when reaching that phase and follow its
 rules. Do not substitute a lighter workflow when the user asked for the loop.
+
+## Durable Run State And Baseline
+
+The loop is iteration-scoped. Use the cleanup inventory provider shipped by
+`pr-delivery`; do not implement a second inventory collector or cleanup
+comparator here. Resolve the required `pr-delivery` skill at startup and set
+`PR_DELIVERY_SKILL_DIR` to its resolved directory. The provider contract is API
+version 1. If the skill or its API 1 provider is unavailable, stop before any
+repository mutation and report the blocker. Never fall back to a duplicate
+implementation.
+
+Resolve and create the durable state location outside every checkout and
+worktree, while keeping `repo_root` stable for the whole run. Initialize the
+run state before creating any branch or worktree, with:
+
+```text
+run_state.py init --path <state-path> --run-id <run-id> --repo-root <repo-root> \
+  --target-branch <target-branch> --current-sha <current-sha> --max-passes 2 \
+  [--target-remote <remote-name>] [--companion-repo <repo-root> ...]
+```
+
+`max-passes` defaults to 2 and bounds delivery iterations. Initialization
+captures the immutable run-wide inventory baseline. Verify that initialization
+and baseline capture succeeded before reserving or creating the first audit resource.
+Use `python3 <skill-dir>/scripts/run_state.py` for all state changes; read
+[`references/run-state-schema.md`](references/run-state-schema.md) before use.
+The required CLI is `init`, `replace --path --candidate`, `validate --path`,
+`archive --path --source <file> --kind report|history|plan|evidence`,
+`verify-artifacts --path`, `verify-cleanup --path`, and `summary --path`.
+Archives copy files to external state/artifacts and register their hashes. Do not edit the state file directly
+or add fields beyond the documented schema.
+
+Required lifecycle values are status `active` while work is in progress;
+stages `audit`, `planning`, `implementation`, `delivery`, `post-audit`,
+`cleanup`, and `complete`; terminal statuses are `complete` and `deferred`.
+`blocked` is resumable and requires a reason at the interrupted stage.
+`complete` means no major actionable issue remains. `deferred`
+means issues remain and the durable state records why work stops. `blocked`
+means required work remains blocked; it must not be reported as successful
+cleanup. Advance exactly one iteration only after that iteration's cleanup
+verifies, set the next stage to `audit`, and clear `reason`.
+
+Every invocation of `grade` writes reports and history. Therefore reserve and
+create an owned audit branch/worktree before the initial grade invocation,
+after durable initialization and baseline creation. Apply this to the initial
+audit and every post-audit. Do not grade on the target branch. Before each
+invocation, identify its report and history source files; archive both with
+`run_state.py archive` and verify the copies are readable and their registered
+hashes match before cleanup. Every audit record must refer to the archived
+report and history plus source SHA, and identify phase `initial` or `post`.
+Require a post audit whenever a delivery occurred.
+
+Before follow-up decisions, check that the latest audit is fresh for the
+current target-branch SHA and phase. Persist `stage: planning` before writing
+a plan; the helper verifies the live target and archived evidence at planning
+and implementation transitions. Start any follow-up from that fresh state
+and archived evidence, on a newly owned branch/worktree. Never reuse or convert
+the previous pass's delivery or audit branch into another pass. Never rerun
+`grade` solely to reconstruct a report or history artifact that was lost; mark
+the run blocked and preserve the available evidence instead.
+
+Reserve every loop-owned resource in the durable ledger before creating it:
+implementation, audit, planning, reviewer, delivery, and companion-repository
+branches/worktrees, including remote branch names before first push. Keep all
+state, archives, and artifacts outside every checkout. Follow the detailed
+cleanup and terminal-exit contract in
+[`references/cleanup-contract.md`](references/cleanup-contract.md).
 
 ## Preflight
 
@@ -41,9 +123,9 @@ rules. Do not substitute a lighter workflow when the user asked for the loop.
 
 ## Branch And Worktree Ownership
 
-Maintain a cleanup ledger for every branch or worktree this loop creates:
-`target_branch`, `task_branch`, `loop_check_branch`, `worktree_path`,
-`created_by_loop`, `converted_to_next_pass`, and `cleanup_status`.
+The durable run-state ledger is authoritative for ownership and cleanup
+provenance; follow its schema documentation rather than maintaining a second
+ledger or inventing extra state fields.
 
 - Use distinctive names: `codex/grade-loop/<finding-slug>` for implementation
   work and `codex/grade-loop-check/<finding-slug>` for post-closeout grade
@@ -54,13 +136,13 @@ Maintain a cleanup ledger for every branch or worktree this loop creates:
   report-mutating loop check off the synced target branch.
 - Before creating a new worktree, run `git worktree list --porcelain` and
   classify existing loop-owned worktrees. Remove only clean leftovers that are
-  proven to belong to this loop and no longer hold a selected next pass. Leave
+  proven to belong to this loop and no longer needed within the current pass. Leave
   dirty, unmerged, or unrecognized worktrees in place and report them.
-- Pass the ledger to `pr-delivery` during Phase 5 so delivery cleanup targets
-  the right remote branch, local branch, and temporary worktree.
-- At final closeout, run one ownership sweep. Each loop-created branch/worktree
-  must be cleaned up, converted into the next task branch, or listed as a
-  leftover with the exact reason it remains.
+- Pass the run ID, iteration, state path, state helper, and iteration-baseline cleanup policy
+  to `pr-delivery` during Phase 5. Its nested cleanup must satisfy its own gates;
+  the outer loop still verifies full inventory equality.
+- Conversion between passes is prohibited. Every pass's owned resources must
+  be safely removed before another iteration begins.
 
 ## Context Reset Discipline
 
@@ -75,15 +157,16 @@ another remediation pass, clear stale context:
    is reachable from the target branch, verify target-branch CI, fetch the
    target branch, and ensure no PR monitoring or long-running command sessions
    remain active.
-3. Re-read repository instructions, the current grade report, remediation plan,
-   dirty state, default branch HEAD, CI state, and running app/container state
+3. Re-read repository instructions, the archived current grade report and
+   history, remediation plan, dirty state, target branch HEAD, CI state, and
+   running app/container state
    before rebuild, loop-check grading, or another implementation pass.
 4. Classify any dirty files discovered after the merge before editing again;
-   preserve unrelated work and do not treat generated loop-check report changes
-   as canonical unless they are intentionally carried into the next pass.
+   preserve unrelated work and archive grade-generated report/history changes
+   before cleaning them up.
 5. Start post-closeout grade checks and any follow-up pass from the refreshed
-   target-branch state, not from the merged PR branch, original grade findings,
-   or stale plan assumptions.
+   target-branch state and archived evidence. Each gets a new owned branch or
+   worktree; never use the merged PR branch or an earlier pass's audit branch.
 
 This reset is context hygiene, not destructive cleanup: do not discard unrelated
 work, reset the worktree, restart services, or rebuild stopped containers unless
@@ -91,14 +174,13 @@ repository instructions or the user require it.
 
 ## Pass Budget
 
-Run one delivery pass by default, then perform the post-closeout grade check. If
-that check finds another major actionable issue, run at most one additional
-autonomous delivery pass unless the user explicitly asked for more passes or
-gave a larger budget.
+Run two delivery passes by default at most, with a post-closeout grade check
+after each delivery. The `max-passes` durable run-state value is the bound. If
+the audit finds no major actionable issues, finish without delivery.
 
-After the autonomous follow-up budget is exhausted, report the next selected
-finding and stop with a deferral instead of opening an unbounded sequence of
-PRs.
+When the budget is exhausted while major issues remain, archive and record the
+selected next finding and a deferral reason, then terminate as `deferred`. Do
+not open another PR or continue an unbounded sequence.
 
 ## Phase 1 - Grade
 
@@ -112,9 +194,16 @@ After grading, extract only the major actionable issues:
 - then roadmap items that are high impact and feasible in one PR;
 - exclude purely speculative, low-evidence, or churn-heavy recommendations.
 
-If the grade finds no major actionable issues, record the result and stop the
-implementation/PR portion unless the user explicitly wants a no-op documentation
-PR.
+If the grade finds no major actionable issues, archive the report and history,
+record the result, and terminate through the cleanup contract. This includes an
+initial clean audit with no delivery. Preserve the canonical report and history
+in a permitted pre-existing checkout or an already authorized delivery before
+removing their audit resources. Copy only verified generated changes without
+overwriting unrelated work; preserve repository history/append semantics.
+External archives are recovery evidence, not the requested canonical output.
+Do not create a documentation PR merely to clean up a no-op audit. If neither
+preservation route is permitted and safe, retain the work and record the exact
+cleanup blocker.
 
 ## Phase 2 - Remediation Plan
 
@@ -134,9 +223,10 @@ The plan must include:
 - acceptance criteria proving each selected issue is fixed;
 - explicit deferred findings with reasons.
 
-Keep the plan bounded to what can reasonably be implemented and merged in one
-PR. If the grade contains multiple unrelated major issues, choose the smallest
-coherent high-impact slice and defer the rest explicitly.
+Keep the selected pass bounded and combine its compatible fixes into one PR.
+Use separate commits and finding-specific verification for independent slices.
+Defer out-of-scope findings explicitly; split delivery only for a documented
+constraint rather than repeating full PR/main CI for each worker's change.
 
 ## Phase 3 - Recursive Plan Review
 
@@ -166,8 +256,8 @@ Implement the reviewed plan exactly as scoped.
 ## Phase 4.5 - Adversarial Implementation Review
 
 Before using `pr-delivery`, run this gate after local verification and before
-staging for commit. The loop invocation is explicit authorization for one
-bounded adversarial reviewer subagent for this gate only.
+staging for commit. Use one fresh independent reviewer for this gate in addition to the bounded
+worker delegation required above.
 
 Spawn one fresh reviewer subagent and give it the minimum useful context:
 
@@ -182,7 +272,7 @@ unnecessary complexity, boundary-case failures, verification gaps, and PR
 delivery blockers. Do not ask it to edit files, stage, commit, push, or run
 delivery.
 
-Do not load or run `pr-delivery` until verified reviewer findings that could
+Do not start PR delivery until verified reviewer findings that could
 affect correctness, tests, maintainability, or delivery are fixed or explicitly
 documented as non-blocking. Rerun focused verification after fixes, and rerun
 the reviewer only when the fixes materially change the implementation or the
@@ -282,29 +372,42 @@ history again.
 Then inspect the refreshed grade report for major actionable issues using the
 same selection rules from Phase 1:
 
-- If no major actionable issues remain, record that result, capture the final
-  score/evidence for the final response, and clean up the generated loop-check
-  branch/worktree, convert it into the next task branch, or report it as a
-  leftover with the exact reason so the target branch remains clean.
+- If no major actionable issues remain, archive the report and history, record
+  the result, capture final score/evidence, and clean up this iteration.
 - If a major actionable issue remains, is feasible in another bounded PR, and
-  the pass budget allows another autonomous delivery, keep or rename the
-  loop-check branch as the next task branch, repeat Preflight, then start
-  another loop at Phase 2 using a new plan or an updated plan that clearly
-  identifies the next selected findings.
-- If major issues remain but are too broad, blocked, speculative, require a
-  product/operational decision, or exceed the remaining pass budget, record the
-  blocker or deferral, clean up generated loop-check changes, and stop instead
-  of forcing an unsafe PR.
+  the pass budget allows another autonomous delivery, finish and verify cleanup
+  for the current iteration, then create a fresh iteration with
+  `replace --path <state-path> --candidate <candidate.json>` before creating
+  any new resources. If the target SHA is unchanged, start at Phase 2 using
+  the preserved audit and selected findings; do not repeat the same full audit.
+  If the target advanced, refresh audit evidence before deciding the next pass.
+- If major issues remain but are too broad, speculative, require a
+  product/operational decision, or exceed the remaining pass budget, record a
+  deferral and reason, clean up generated audit changes, and stop. If required
+  work is blocked, preserve required resources and record a resumable blocked
+  state with the exact cleanup status.
 
-For loop-check cleanup, discard only files that this Phase 7 grade pass
-generated or modified on the loop-check branch, such as the refreshed report or
-history entries, and only when the branch is not being converted into the next
-task branch. Do not restore unrelated files or remove a dirty worktree whose
-dirty state is not fully explained by this loop-check pass.
+For audit cleanup, archive and verify every grade-generated report/history
+artifact first. Preserve the latest canonical report/history in a permitted
+pre-existing checkout or authorized delivery as described in Phase 1. Then
+remove disposable loop-generated copies after archival and only
+when they are proven to belong to that iteration. Do not restore unrelated
+files or remove a dirty worktree whose dirty state is not fully explained by
+the current iteration.
 
 Do not keep looping indefinitely on low-evidence recommendations or on the same
 rejected/deferred findings. Each additional pass must select a concrete,
 evidence-backed remediation slice that can be implemented and delivered safely.
+
+## Cleanup And Terminal Exits
+
+Follow [`references/cleanup-contract.md`](references/cleanup-contract.md) for
+every pass boundary and every terminal exit, including an initially clean
+audit, budget exhaustion, deferment, and blocker. A run is not terminal until
+the durable state records the decision and the outer cleanup inventory matches
+the reserved baseline, except that a blocked run may retain resources required
+to preserve unresolved work and must report them explicitly. Never describe a
+blocked run as cleanly completed.
 
 ## Final Response
 
@@ -313,8 +416,7 @@ Report concisely:
 - initial and final grade evidence, including report path and score movement;
 - post-closeout grade-loop result and whether another remediation pass was
   skipped, deferred, or completed;
-- pass budget used and whether a generated loop-check branch/worktree was
-  cleaned up or converted into the next task branch;
+- pass budget used and whether each iteration's resources were cleaned up;
 - remediation plan path and recursive-plan-review pass count;
 - adversarial review outcome and any fixes or deferred findings from it;
 - main implementation changes;
@@ -325,3 +427,4 @@ Report concisely:
 - container rebuild command and health/readiness results, or why rebuild was
   skipped;
 - deferred grade findings and residual risks.
+- durable run-state summary and archived evidence locations.

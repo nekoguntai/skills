@@ -1,7 +1,8 @@
 # grade-loop
 
-End-to-end quality remediation loop for application repositories, with
-stale-context resets at startup and between remediation passes.
+End-to-end quality remediation loop for application repositories, with durable
+iteration state, archived grade evidence, and strict cleanup to a verified
+repository inventory baseline after every pass and terminal exit.
 
 Ships one skill:
 
@@ -29,7 +30,23 @@ Then in any repo:
 - Implementation with focused and proportional verification
 - PR delivery with merge ancestry and target-branch post-merge CI verification
 - Rebuild of already-running localhost app containers
-- Post-closeout grade rerun to decide whether another remediation pass is warranted
+- Initial and post-closeout audits on owned branches or worktrees
+- External durable run state and report/history/plan/evidence archives
+- Two delivery passes by default, with review and delivery gates retained
+- Full inventory restoration after each iteration and every terminal exit
+
+The loop requires the API 1 cleanup inventory provider shipped by
+`pr-delivery`. It stops before repository mutation if that provider is
+unavailable. Run state and archived evidence are stored outside repository
+checkouts and worktrees.
+
+## Validation
+
+```bash
+python3 -m unittest discover -s plugins/grade-loop/skills/grade-loop/scripts -p 'test_*.py' -v
+python3 -m unittest discover -s plugins/bug-scrub-loop/skills/bug-scrub-loop/scripts -p 'test_*.py' -v
+python3 -m unittest discover -s plugins/pr-delivery/skills/pr-delivery/scripts -p 'test_*.py' -v
+```
 
 ## License
 

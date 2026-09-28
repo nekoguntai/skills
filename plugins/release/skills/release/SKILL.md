@@ -13,6 +13,32 @@ description: >-
 
 Run a repository-native release. Discover the repo's release surface first; do not invent a parallel release process.
 
+## Delegated Loop Execution
+
+Read the resolved `pr-delivery` skill's `references/loop-execution.md` before
+iterative work. Delegate bounded research, implementation (when authorized),
+and focused verification to cheaper workers, preferably `gpt-6-luna` when
+available. The larger coordinator checks source evidence, diffs, and verification
+outputs and owns decisions, integration, delivery, and cleanup. Preserve the
+independent review and stopping rules below; never treat worker claims as proof.
+
+For authorized delivery, combine compatible changes selected for a pass into
+one reviewed PR with separate worker commits where useful. Split only for a
+recorded repository, protection, rollout/migration, or genuine risk constraint.
+This policy does not authorize implementation, PRs, merges, or publication for
+read-only, plan-only, readiness, or local-only requests.
+
+If nested, inherit the caller's operational ledger and `state_helper`; do not
+create another baseline or complete its goal. When standalone work creates Git
+resources, use `pr-delivery/scripts/loop_state.py init --workflow release`
+and `references/loop-run-state.md` before creation: capture the starting
+inventory, reserve owned resources, archive evidence, and verify live restoration
+at each delivery-group boundary and final/deferral exit. Use no arbitrary pass
+cap unless the user sets one. Do not carry converted resources into another
+pass. Preserve unfinished work with a cleanup blocker rather than deleting it
+or claiming completion. If no Git resources are created, preserve requested
+in-place outputs; strict read-only work creates no state or artifacts.
+
 ## Guardrails
 
 - Use the current repository as source of truth.
