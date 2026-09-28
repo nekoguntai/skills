@@ -34,6 +34,20 @@ This workflow supports two forge families:
 - Do not delete a merge-queue PR branch before the queue merge has landed and been verified.
 - Prefer stable plain `gh ...` and `curl ...` commands. Avoid disposable env prefixes unless a command actually fails without them.
 
+## Caller-Owned Iteration Cleanup
+
+When a caller supplies `cleanup_policy: iteration-baseline`, inherit its
+`run_id`, `iteration`, and `state_path`. Reserve every local branch, remote
+branch (before first push), and worktree in the caller's durable ledger before
+creation, including agent/review and companion resources. Never claim a resource
+from the caller's protected baseline. Return verified absence evidence for each
+owned resource after safe delivery cleanup; pending or converted resources block
+nested completion. Conversion within a plan never exempts cleanup at the outer
+iteration boundary. Preserve unique plan/progress history durably first, and
+recheck current branch tips before deleting; remote deletion must use an explicit
+expected-SHA lease. The outer caller verifies whole-inventory equality after all
+nested phases finish. Existing deletion permissions and merge/CI gates still apply.
+
 ## Workflow
 
 1. Preflight the repo.

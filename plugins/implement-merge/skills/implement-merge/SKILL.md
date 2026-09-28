@@ -30,6 +30,20 @@ Use this skill to turn the newest applicable plan into merged production code. T
      Default standalone runs to `after-plan`. Require a nested caller to pass
      the policy explicitly.
 
+## Caller-Owned Iteration Cleanup
+
+When a caller supplies `cleanup_policy: iteration-baseline`, inherit its
+`run_id`, `iteration`, and `state_path`. Reserve every local branch, remote
+branch (before first push), and worktree in the caller's durable ledger before
+creation, including agent/review and companion resources. Never claim a resource
+from the caller's protected baseline. Return verified absence evidence for each
+owned resource after safe delivery cleanup; pending or converted resources block
+nested completion. Conversion within a plan never exempts cleanup at the outer
+iteration boundary. Preserve unique plan/progress history durably first, and
+recheck current branch tips before deleting; remote deletion must use an explicit
+expected-SHA lease. The outer caller verifies whole-inventory equality after all
+nested phases finish. Existing deletion permissions and merge/CI gates still apply.
+
 ## Branch And Worktree Ownership
 
 At startup, create a small cleanup ledger for resources this loop owns:

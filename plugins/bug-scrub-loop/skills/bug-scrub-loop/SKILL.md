@@ -70,7 +70,7 @@ Never rely on "newest plan" discovery when this loop already owns a plan.
 
 Before mutating anything, resolve and inspect `$bug-scrub`,
 `$recursive-plan-review`, `$implement-merge`, and `$pr-delivery`. Verify the
-state helper is executable, reports schema version 1 through a successfully
+state helper is executable, reports schema version 2 through a successfully
 validated initialized document, and that `$implement-merge` supports:
 
 - a caller-owned active goal;
@@ -90,6 +90,16 @@ The loop owns goal completion: when `$implement-merge` runs as a nested stage,
 use its caller-owned-goal contract. It must reuse but neither replace nor
 complete the outer goal. Complete it only after the final fresh scrub satisfies
 the termination gate.
+
+## Mandatory Cleanup Gate
+
+Read `references/cleanup-contract.md` before initialization and at every
+iteration boundary. Capture immutable pre-run inventories for the application
+and all companion repositories. Pass the shared ownership ledger and
+`cleanup_policy: iteration-baseline` through nested delivery. Require actual
+local/remote/worktree set equality before advancing; ledger status alone is
+insufficient. Schema 1 state remains inspection-only until reviewed migration
+from trustworthy historical evidence; never invent its missing baseline.
 
 ## Durable Run State
 
@@ -121,7 +131,8 @@ python3 <skill-dir>/scripts/run_state.py init \
   --baseline-sha <full-sha> \
   --deploy <final|each-plan|never> \
   [--max-iterations <n>] \
-  [--containers-running]
+  [--containers-running] \
+  [--companion-repo <absolute-companion-root>]
 ```
 
 For every transition, construct a complete candidate JSON document, validate
@@ -298,8 +309,9 @@ After convergence:
 2. Revalidate each planned finding against current source.
 3. Update or remove stale findings and rerun plan review if the plan changes
    materially.
-4. If no blocking findings remain because upstream changes resolved them, skip
-   implementation and begin a fresh scrub.
+4. If no blocking findings remain because upstream changes resolved them, mark
+   the obsolete plan `superseded`, skip implementation, and pass the cleanup
+   gate in stage 6 before beginning a fresh scrub.
 
 Do not implement a plan that still has unresolved sequencing, ownership,
 verification, safety, or product-policy questions.
@@ -336,6 +348,12 @@ to the active plan when that preserves a coherent delivery. Otherwise record it
 for the next iteration; never silently drop it.
 
 ### 6. Reset and Rescrub
+
+First execute the cleanup contract and `run_state.py verify-cleanup` for the
+current iteration. Reload state, then advance via `replace`, which independently
+checks live inventories. This also applies when upstream resolutions skip
+implementation. No planning, review, companion, or orchestration resource may
+survive this boundary; `converted` is not an exemption.
 
 After the entire plan is merged, target-branch CI is verified, owned resources
 are cleaned, and the selected nested rebuild/deferral is complete:
@@ -408,7 +426,9 @@ Before completing the goal:
 5. Record deployment evidence in durable run state.
 6. Record remaining P3 findings and evidence gaps without presenting them as
    blocking defects.
-7. Set run status and stage to `complete`, validate the final state, and only
+7. After deployment and all other closeout work, rerun `verify-cleanup` and
+   record starting/final counts and exact inventory equality. Set run status and
+   stage to `complete` through `replace` (which repeats live verification), and only
    then complete the host goal.
 
 Report:

@@ -30,6 +30,19 @@ $bug-scrub-loop --resume <run-id>
 /reload-plugins
 ```
 
+## Cleanup and validation
+
+Every new run captures branch/worktree baselines and blocks the next iteration
+or completion until live local and remote inventories match. Schema 1 records
+remain readable; missing historical baselines are never fabricated on resume.
+See the skill's [cleanup contract](skills/bug-scrub-loop/references/cleanup-contract.md).
+
+Run the temporary-repository regression suite with:
+
+```bash
+python3 -m unittest discover -s plugins/bug-scrub-loop/skills/bug-scrub-loop/scripts -p 'test_*.py' -v
+```
+
 ## License
 
 MIT — see the repo-level [LICENSE](../../LICENSE).

@@ -18,7 +18,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+from cleanup_state import (
+    CleanupError, InventoryError, capture_baselines, resource_key,
+    validate_cleanup, validate_cleanup_transition, verify_live,
+)
+
+SCHEMA_VERSION = 2
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 RUN_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{5,79}$")
 DEPLOYMENT_POLICIES = {"final", "each-plan", "never"}
@@ -80,7 +85,7 @@ PR_TRANSITIONS = {"open": {"open", "merged", "closed"}, "merged": {"merged"}, "c
 RESOURCE_TRANSITIONS = {
     "active": {"active", "cleaned", "preserved", "converted"},
     "cleaned": {"cleaned"},
-    "preserved": {"preserved"},
+    "preserved": {"preserved", "cleaned"},
     "converted": {"converted", "cleaned", "preserved"},
 }
 RUN_TRANSITIONS = {
@@ -366,13 +371,20 @@ def validate_deployment(value: Any, index: int) -> None:
         require(isinstance(details, str) and details.strip(), f"{path}.details is required for {value['status']}")
 
 
-def validate_resource(value: Any, index: int) -> None:
+def validate_resource(value: Any, index: int, version: int = 1) -> None:
     path = f"resources[{index}]"
     require(isinstance(value, dict), f"{path} must be an object")
-    require_exact_fields(value, {"kind", "identifier", "owner", "status"}, path)
+    fields = {"kind", "identifier", "owner", "status"}
+    if version == 2:
+        fields |= {"repoRoot", "iteration", "remote"}
+    require_exact_fields(value, fields, path)
     for field in ("kind", "identifier", "owner"):
         require_string(value.get(field), f"{path}.{field}")
     require(value.get("status") in RESOURCE_STATUSES, f"{path}.status is invalid")
+    if version == 2:
+        require_string(value.get("repoRoot"), f"{path}.repoRoot")
+        require_integer(value.get("iteration"), f"{path}.iteration", 1)
+        require(value.get("remote") is None or isinstance(value["remote"], str), f"{path}.remote is invalid")
 
 
 def validate_coverage_pass(value: Any, index: int) -> None:
@@ -467,8 +479,10 @@ def validate_state(state: Any) -> dict[str, Any]:
         "createdAt",
         "updatedAt",
     }
+    if state.get("schemaVersion") == 2:
+        required.add("cleanup")
     require_exact_fields(state, required, "state")
-    require(type(state["schemaVersion"]) is int and state["schemaVersion"] == SCHEMA_VERSION, "schemaVersion is unsupported")
+    require(type(state["schemaVersion"]) is int and state["schemaVersion"] in {1, SCHEMA_VERSION}, "schemaVersion is unsupported")
     require_integer(state["revision"], "revision")
     run_id = require_string(state["runId"], "runId")
     require(bool(RUN_ID_PATTERN.fullmatch(run_id)), "runId must be lowercase kebab-case")
@@ -519,7 +533,11 @@ def validate_state(state: Any) -> dict[str, Any]:
     require(len(deployment_ids) == len(set(deployment_ids)), "deployments contains duplicate operationIds")
     resources = require_list(state["resources"], "resources")
     for index, resource in enumerate(resources):
-        validate_resource(resource, index)
+        validate_resource(resource, index, state["schemaVersion"])
+    resource_keys = [resource_key(item) for item in resources]
+    require(len(resource_keys) == len(set(resource_keys)), "resources contains duplicates")
+    if state["schemaVersion"] == 2:
+        validate_cleanup(state)
     verification_commands = require_list(state["verificationCommands"], "verificationCommands")
     require(
         all(isinstance(command, str) and command for command in verification_commands),
@@ -671,6 +689,8 @@ def require_prefix(current: list[Any], candidate: list[Any], path: str) -> None:
 
 
 def validate_transition(current: dict[str, Any], candidate: dict[str, Any]) -> None:
+    require(current["schemaVersion"] == 2, "legacy state is read-only; recover a trustworthy pre-run baseline before migration")
+    validate_cleanup_transition(current, candidate)
     current_findings = keyed(current["findings"], "id")
     candidate_findings = keyed(candidate["findings"], "id")
     require(set(current_findings) <= set(candidate_findings), "findings cannot be removed")
@@ -765,15 +785,15 @@ def validate_transition(current: dict[str, Any], candidate: dict[str, Any]) -> N
             f"pull request {url} has invalid state transition {before['state']} -> {after['state']}",
         )
 
-    current_resources = {(item["kind"], item["identifier"]): item for item in current["resources"]}
-    candidate_resources = {(item["kind"], item["identifier"]): item for item in candidate["resources"]}
+    current_resources = {resource_key(item): item for item in current["resources"]}
+    candidate_resources = {resource_key(item): item for item in candidate["resources"]}
     require(set(current_resources) <= set(candidate_resources), "resources cannot be removed")
-    for resource_key, before in current_resources.items():
-        after = candidate_resources[resource_key]
-        require(after["owner"] == before["owner"], f"resource {resource_key} owner cannot change")
+    for resource_identity, before in current_resources.items():
+        after = candidate_resources[resource_identity]
+        require(after["owner"] == before["owner"], f"resource {resource_identity} owner cannot change")
         require(
             after["status"] in RESOURCE_TRANSITIONS[before["status"]],
-            f"resource {resource_key} has invalid status transition {before['status']} -> {after['status']}",
+            f"resource {resource_identity} has invalid status transition {before['status']} -> {after['status']}",
         )
 
     require_prefix(current["coveragePasses"], candidate["coveragePasses"], "coveragePasses")
@@ -925,6 +945,7 @@ def command_init(arguments: argparse.Namespace) -> None:
             "pullRequests": [],
             "deployments": [],
             "resources": [],
+            "cleanup": capture_baselines(arguments.repo_root, arguments.companion_repo),
             "verificationCommands": [],
             "coveragePasses": [],
             "createdAt": timestamp,
@@ -981,6 +1002,26 @@ def command_upsert_finding(arguments: argparse.Namespace) -> None:
         validate_state(candidate)
         atomic_write(path, candidate)
     print(path)
+
+
+def command_verify_cleanup(arguments: argparse.Namespace) -> None:
+    path = Path(arguments.path).expanduser().resolve()
+    with state_lock(path):
+        state = validate_state(read_json(path))
+        require(state["schemaVersion"] == 2, "legacy state has no trustworthy cleanup baseline")
+        verify_live(state)
+        checks = state["cleanup"]["checks"]
+        if not any(check["iteration"] == state["iteration"] for check in checks):
+            checks.append({
+                "iteration": state["iteration"],
+                "verifiedAt": now_iso(),
+                "repositories": [b["root"] for b in state["cleanup"]["baselines"]],
+            })
+            state["revision"] += 1
+            state["updatedAt"] = now_iso()
+            validate_state(state)
+            atomic_write(path, state)
+    print(f"cleanup verified: {path}")
 
 
 def command_summary(arguments: argparse.Namespace) -> None:
@@ -1041,6 +1082,7 @@ def parser() -> argparse.ArgumentParser:
     initialize.add_argument("--deploy", choices=sorted(DEPLOYMENT_POLICIES), default="final")
     initialize.add_argument("--max-iterations", type=int)
     initialize.add_argument("--containers-running", action="store_true")
+    initialize.add_argument("--companion-repo", action="append", default=[])
     initialize.set_defaults(handler=command_init)
     validate = commands.add_parser("validate")
     validate.add_argument("--path", required=True)
@@ -1053,6 +1095,9 @@ def parser() -> argparse.ArgumentParser:
     upsert_finding.add_argument("--path", required=True)
     upsert_finding.add_argument("--finding", required=True)
     upsert_finding.set_defaults(handler=command_upsert_finding)
+    cleanup = commands.add_parser("verify-cleanup")
+    cleanup.add_argument("--path", required=True)
+    cleanup.set_defaults(handler=command_verify_cleanup)
     summary = commands.add_parser("summary")
     summary.add_argument("--path", required=True)
     summary.set_defaults(handler=command_summary)
@@ -1068,7 +1113,7 @@ def main() -> int:
         arguments = parser().parse_args()
         arguments.handler(arguments)
         return 0
-    except StateError as error:
+    except (StateError, CleanupError, InventoryError) as error:
         print(f"run-state error: {error}", file=sys.stderr)
         return 1
 

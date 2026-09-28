@@ -41,7 +41,7 @@
     {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup."
     },
     {
@@ -77,13 +77,13 @@
     {
       "name": "implement-merge",
       "source": "./plugins/implement-merge",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "description": "Plan-to-merge execution loop with nested caller-owned goals and explicit rebuild policies."
     },
     {
       "name": "bug-scrub-loop",
       "source": "./plugins/bug-scrub-loop",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "Resumable scrub-plan-fix-merge loop for eliminating confirmed P0-P2 defects."
     },
     {
