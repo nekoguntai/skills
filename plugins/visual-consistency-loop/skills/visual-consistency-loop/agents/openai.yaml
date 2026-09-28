@@ -1,0 +1,4 @@
+interface:
+  display_name: "Visual Consistency Loop"
+  short_description: "Audit, fix, and repeat until no major visual findings remain"
+  default_prompt: "Use $visual-consistency-loop to audit this app’s visual and navigation consistency, fix and deliver major findings, verify cleanup, and repeat until a fresh audit finds no P0–P2 issues."

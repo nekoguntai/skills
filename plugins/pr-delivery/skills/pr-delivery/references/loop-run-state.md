@@ -37,6 +37,7 @@ Initialization starts iteration 1. Defaults:
 | grade-loop | 2 | Grade report and nonempty grade history |
 | rationalize-loop | 2 | Convergence plan/report |
 | frontend-pr-loop | 2 | Frontend inspection evidence/report |
+| visual-consistency-loop | No arbitrary cap; stop when no major visual or navigation findings remain | Visual inventory and audit evidence |
 | feature-validation-loop | 1 | Canonical CSV snapshot plus evidence/derived outputs as applicable |
 | implement-merge | No arbitrary cap; complete the selected plan | Phase/plan acceptance evidence |
 | recursive-plan-review | No arbitrary cap; convergence rule applies | Reviewed plan and disposition evidence |
@@ -88,7 +89,7 @@ python3 <pr-delivery-dir>/scripts/loop_state.py replace \
 inventory and archived evidence before entering cleanup, completing, deferring,
 or advancing. Planning/implementation transitions also verify the live target
 and current (or just-completed prior-pass) audit/archives before consuming them.
-For grade, rationalize, and frontend profiles, persist actionable planning
+For grade, rationalize, frontend, and visual consistency profiles, persist actionable planning
 before implementation, then implementation before delivery. Delivery bookkeeping
 may record merge/CI results before the post audit; entering further planning or
 implementation still requires fresh evidence. Evidence from any delivered pass must be its post audit, including recovery
@@ -149,8 +150,8 @@ artifact and `history` may be empty. Grade requires a report-kind artifact and
 nonempty history. These archive snapshots never replace the canonical CSV,
 requested code edits, plan, or published artifact itself.
 
-Planning/implementation phase sequencing applies to grade, rationalize, and
-frontend delivery profiles; the other workflows retain their own phase logic.
+Planning/implementation phase sequencing applies to grade, rationalize, frontend,
+and visual consistency profiles; the other workflows retain their own phase logic.
 All profiles verify target freshness, preserved artifacts, ownership, and
 cleanup before progression or terminal success.
 

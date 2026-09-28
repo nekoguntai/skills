@@ -50,7 +50,7 @@ Where `<plugin-name>` is one of the plugins listed below.
 | [`bug-scrub-loop`](plugins/bug-scrub-loop) | `$bug-scrub-loop`, `/bug-scrub-loop:bug-scrub-loop` | Resumable scrub-plan-fix-merge loop that continues until a measured pass finds no confirmed P0-P2 defects. |
 | [`scaffold`](plugins/scaffold) | `$scaffold`, `/scaffold:scaffold` | Portable CI scaffolding for GitHub and Forgejo repositories, with 100% coverage, quality/security gates, and protected PR-only merges. |
 | [`done`](plugins/done) | `$done`, `/done:done` | Capture completed work as a concise, evidence-backed Obsidian session note. |
-| [`visual-consistency-audit`](plugins/visual-consistency-audit) | `$visual-consistency-audit`, `/visual-consistency-audit:visual-consistency-audit` | Evidence-driven auditing and remediation planning for visual drift, accessibility, responsive behavior, and cross-page navigation continuity. |
+| [`visual-consistency-loop`](plugins/visual-consistency-loop) | `$visual-consistency-loop`, `/visual-consistency-loop:visual-consistency-loop` | Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup. |
 
 <!-- Add new plugins here as rows. Each plugin needs:
      1. Its own directory under plugins/

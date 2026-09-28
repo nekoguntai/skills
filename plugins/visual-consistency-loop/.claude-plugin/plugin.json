@@ -1,0 +1,10 @@
+{
+  "name": "visual-consistency-loop",
+  "description": "Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup.",
+  "author": {
+    "name": "nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT"
+}

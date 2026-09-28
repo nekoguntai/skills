@@ -1,20 +1,23 @@
 ---
-name: visual-consistency-audit
-description: Evidence-driven visual and navigational consistency auditing and remediation planning for application UIs. Use when Codex is asked to inspect visual drift; compare inconsistent tabs, buttons, forms, or surfaces; audit embedded navigation, breadcrumbs, back/return paths, or cross-page workflow continuity; investigate dark-mode or responsive inconsistencies; rationalize selection and status motifs; assess design-system adherence; create a visual inventory or fix list; define a semantic visual contract; add visual regression gates; or implement and verify a visual-consistency plan. Supports analysis-only reports, checkable plans, and explicitly authorized implementation; it does not treat every visual or navigational difference as a defect.
+name: visual-consistency-loop
+description: Evidence-driven visual and navigation consistency audit and remediation loop for application UIs. Use for visual drift, design-system adherence, dark-mode/responsive inconsistencies, navigation continuity, visual inventories, or visual-consistency plans. A bare $visual-consistency-loop or explicit visual consistency loop audits, plans, fixes, verifies, delivers and merges, cleans owned resources, and repeats until a fresh scoped audit finds no P0–P2 findings. Explicit audit-only, plan-only, and local implementation requests retain their narrower scope.
 ---
 
-# Visual Consistency Audit
+# Visual Consistency Audit and Remediation Loop
 
 Build a rendered, source-backed account of visual and navigational drift, decide which differences communicate real meaning, and turn verified findings into a semantic contract and executable fix plan.
 
 ## Choose the operating mode
 
-- **Audit/report:** Inspect and write findings. Do not modify product code.
-- **Plan:** Produce or update a checkable remediation plan. Do not implement it.
-- **Implement:** Change code only when the user explicitly asks for changes.
-- **Deliver:** Commit, open, or merge a PR only when separately authorized. Use an available frontend or PR-delivery skill instead of duplicating its forge workflow.
+- **Autonomous loop:** A bare `$visual-consistency-loop`, `/visual-consistency-loop`, or explicit request to run the visual consistency loop authorizes the audit → reviewed plan → implementation → verification → PR/merge → target CI → runtime verification → cleanup → fresh audit cycle. Continue until no major findings remain; do not stop after a fixed two passes or ask to proceed between already-authorized stages. Read [references/remediation-loop.md](references/remediation-loop.md) before any loop mutation or delegation.
+- **Audit/report:** An explicit audit, check, review, recommendations, or report request performs one inspection and writes requested artifacts; it does not modify product code or deliver changes. A strict no-files/no-changes request writes no artifacts or state.
+- **Plan:** Produce or update a checkable remediation plan without implementing it.
+- **Implement only:** Apply and verify the requested plan locally. Do not infer PR or merge authority.
+- **Deliver:** Use `pr-delivery` when delivery is explicitly authorized, including autonomous loop mode.
 
-If the request is ambiguous, default to audit/report. Preserve unrelated dirty work in every mode.
+Explicit limits override bare-invocation defaults. A request to edit this skill changes the skill only; it does not launch a repository audit or delivery loop. If other wording is ambiguous, default to audit/report. Preserve unrelated dirty work in every mode.
+
+The sections below define **one audit/remediation pass**, reused by the loop without recursively invoking its autonomous entrypoint. Major findings are confirmed P0, P1, or P2 findings under the rubric. P3 polish, intentional differences, and unproven leads do not drive automatic remediation; missing required evidence prevents a clean claim.
 
 ## Load repository context
 
@@ -38,7 +41,7 @@ Gather two independent evidence layers:
 Run the bundled source helper when the repository uses text-based frontend code:
 
 ```bash
-skill_dir=/path/to/visual-consistency-audit
+skill_dir=/path/to/visual-consistency-loop
 repo_root=$(pwd)
 inventory_output=$(mktemp)
 node "$skill_dir/scripts/inventory-ui-controls.mjs" "$repo_root" --output "$inventory_output"
@@ -185,4 +188,4 @@ Resolve verified findings and rerun affected checks. If no independent reviewer 
 
 ## Close out
 
-Report the audited scope, highest-priority inconsistencies, artifact paths, rendered/automated verification, deliberate exceptions, unverified areas, and—only if delivery was authorized—PR and runtime results. Never claim an app-wide audit when the captured matrix covered only a subsystem.
+Report the audited scope, highest-priority inconsistencies, artifact paths, rendered/automated verification, deliberate exceptions, unverified areas, and—only if delivery was authorized—PR and runtime results. In loop mode, also report passes, remaining P0–P2 counts, exact final source/build identity, durable state path, cleanup verification, and whether the run is complete, deferred, or blocked. Never claim an app-wide audit when the captured matrix covered only a subsystem; a merged fix alone does not establish a clean final audit.

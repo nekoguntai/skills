@@ -13,12 +13,12 @@ from .target import verify_target
 SHA = re.compile(r"[0-9a-f]{40}")
 STATUSES = {"active", "blocked", "complete", "deferred"}
 STAGES = {"audit", "planning", "implementation", "delivery", "post-audit", "cleanup", "complete"}
-WORKFLOWS = {"grade-loop", "rationalize-loop", "frontend-pr-loop", "feature-validation-loop",
+WORKFLOWS = {"grade-loop", "rationalize-loop", "frontend-pr-loop", "visual-consistency-loop", "feature-validation-loop",
              "implement-merge", "recursive-plan-review", "scaffold", "release"}
 DEFAULT_BUDGETS = {"grade-loop": 2, "rationalize-loop": 2, "frontend-pr-loop": 2,
-                   "feature-validation-loop": 1, "implement-merge": None,
+                   "visual-consistency-loop": None, "feature-validation-loop": 1, "implement-merge": None,
                    "recursive-plan-review": None, "scaffold": None, "release": None}
-PLANNING_WORKFLOWS = {"grade-loop", "rationalize-loop", "frontend-pr-loop"}
+PLANNING_WORKFLOWS = {"grade-loop", "rationalize-loop", "frontend-pr-loop", "visual-consistency-loop"}
 FIELDS = {"workflow", "schemaVersion", "revision", "runId", "repoRoot", "targetBranch", "targetRemote", "currentSha",
           "iteration", "maxPasses", "status", "stage", "reason", "cleanup", "resources",
           "artifacts", "audits", "deliveries"}

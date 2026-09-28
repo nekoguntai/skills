@@ -1,0 +1,38 @@
+{
+  "name": "visual-consistency-loop",
+  "version": "0.2.0",
+  "description": "Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup.",
+  "author": {
+    "name": "nekoguntai",
+    "url": "https://github.com/nekoguntai"
+  },
+  "homepage": "https://github.com/nekoguntai/skills",
+  "repository": "https://github.com/nekoguntai/skills",
+  "license": "MIT",
+  "keywords": [
+    "visual-consistency",
+    "navigation",
+    "accessibility",
+    "ui-audit"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Visual Consistency Loop",
+    "shortDescription": "Fix major visual and navigation drift in a verified loop.",
+    "longDescription": "Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup.",
+    "developerName": "nekoguntai",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Analyze",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com/nekoguntai/skills",
+    "defaultPrompt": [
+      "Run $visual-consistency-loop until no major visual or navigation findings remain.",
+      "Use $visual-consistency-loop for an audit-only report.",
+      "Create a visual consistency remediation plan without implementing it."
+    ]
+  }
+}

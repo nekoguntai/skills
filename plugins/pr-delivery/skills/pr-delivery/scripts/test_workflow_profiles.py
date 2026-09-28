@@ -18,6 +18,7 @@ WORKFLOWS = {
     "grade-loop": 2,
     "rationalize-loop": 2,
     "frontend-pr-loop": 2,
+    "visual-consistency-loop": None,
     "feature-validation-loop": 1,
     "implement-merge": None,
     "recursive-plan-review": None,
@@ -139,6 +140,47 @@ class WorkflowProfileTests(unittest.TestCase):
             with self.subTest(workflow=workflow):
                 state = self.state(self.init(workflow))
                 self.assertEqual(expected, state["maxPasses"])
+
+    def test_visual_audit_cli_budget_and_planning_gates(self):
+        path = self.init("visual-consistency-loop")
+        self.assertIsNone(self.state(path)["maxPasses"])
+        bounded = self.state(self.init("visual-consistency-loop", 3))
+        self.assertEqual(3, bounded["maxPasses"])
+
+        self.add_audit(path, "clean")
+        result = self.replace(path, lambda state: state.update(stage="planning"), ok=False)
+        self.assertIn("planning requires actionable findings", result.stderr)
+
+        actionable = self.init("visual-consistency-loop")
+        self.add_audit(actionable, "actionable")
+        result = self.replace(actionable, lambda state: state.update(stage="implementation"), ok=False)
+        self.assertIn("enter planning before implementation", result.stderr)
+        self.replace(actionable, lambda state: state.update(stage="planning"))
+        result = self.replace(actionable, lambda state: state.update(stage="delivery"), ok=False)
+        self.assertIn("enter implementation before delivery", result.stderr)
+        self.replace(actionable, lambda state: state.update(stage="implementation"))
+        self.replace(actionable, lambda state: state.update(stage="delivery"))
+        self.assertEqual("delivery", self.state(actionable)["stage"])
+
+    def test_visual_audit_can_advance_past_two_passes_and_completes_only_when_clean(self):
+        path = self.init("visual-consistency-loop")
+        for next_iteration in range(2, 5):
+            with self.subTest(next_iteration=next_iteration):
+                self.add_audit(path, "actionable")
+                self.cli(path, "verify-cleanup")
+                self.replace(path, lambda state: state.update(iteration=next_iteration))
+                self.assertEqual(next_iteration, self.state(path)["iteration"])
+
+        self.add_audit(path, "actionable")
+        self.cli(path, "verify-cleanup")
+        result = self.replace(path, lambda state: state.update(status="complete", stage="complete"), ok=False)
+        self.assertIn("complete requires clean audit", result.stderr)
+        self.assertEqual("active", self.state(path)["status"])
+
+        self.add_audit(path, "clean")
+        self.cli(path, "verify-cleanup")
+        self.replace(path, lambda state: state.update(status="complete", stage="complete"))
+        self.assertEqual("complete", self.state(path)["status"])
 
     def test_grade_requires_report_and_nonempty_history_but_other_profiles_accept_plan_without_history(self):
         grade = self.state(self.init("grade-loop"))

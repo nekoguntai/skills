@@ -41,7 +41,7 @@
     {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup."
     },
     {
@@ -99,10 +99,10 @@
       "description": "Capture completed work as a concise, evidence-backed Obsidian session note."
     },
     {
-      "name": "visual-consistency-audit",
-      "source": "./plugins/visual-consistency-audit",
-      "version": "0.1.0",
-      "description": "Evidence-driven visual and navigation consistency auditing for application UIs."
+      "name": "visual-consistency-loop",
+      "source": "./plugins/visual-consistency-loop",
+      "version": "0.2.0",
+      "description": "Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup."
     }
   ]
 }
