@@ -1,6 +1,6 @@
 {
   "name": "implement-merge",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Plan-to-merge execution loop with nested caller-owned goals and explicit rebuild policies.",
   "author": {
     "name": "nekoguntai",

@@ -82,8 +82,16 @@ def capture_baselines(repo_root, companion_roots):
 
 
 def verify_inventories(state):
+    """Check each repository for this run's leftovers; return collaborator changes.
+
+    Resources the run owns must be gone. Changes made by other collaborators
+    (branches and worktrees this run never reserved) are reported, not failed.
+    """
+    report = {}
     for baseline in validate_baselines(state):
-        verify(baseline)
+        owned = [item for item in state.get("resources", []) if item.get("repoRoot") == baseline["root"]]
+        report[baseline["root"]] = verify(baseline, owned)["collaborator_changes"]
+    return report
 
 
 def validate_resource_transition(current, candidate):

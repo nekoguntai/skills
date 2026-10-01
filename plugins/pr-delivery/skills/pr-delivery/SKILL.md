@@ -49,8 +49,10 @@ integration, protected merge, and exact resource deletion.
 
 `scripts/loop_cleanup` is the canonical read-only Git inventory and ownership
 library (API 1) for caller loops. It captures local branch names, actual remote
-heads, and worktree assignments; verifies immutable baselines; and validates
-resource transitions. Each loop retains its own workflow and completion policy.
+heads, and worktree assignments; verifies that a run's owned resources are gone
+and its primary checkout is restored, reporting other collaborators' branches
+and worktrees without failing on them; lists our own forgotten resources from
+earlier runs (`loop_state.py stale`); and validates resource transitions. Each loop retains its own workflow and completion policy.
 Callers must resolve this skill directory and set `PR_DELIVERY_SKILL_DIR` for
 state-helper invocations. Missing/incompatible providers block those loops
 before repository writes; never substitute cached remote-tracking refs or a
@@ -68,8 +70,9 @@ owned resource after safe delivery cleanup; pending or converted resources block
 nested completion. Conversion within a plan never exempts cleanup at the outer
 iteration boundary. Preserve unique plan/progress history durably first, and
 recheck current branch tips before deleting; remote deletion must use an explicit
-expected-SHA lease. The outer caller verifies whole-inventory equality after all
-nested phases finish. Existing deletion permissions and merge/CI gates still apply.
+expected-SHA lease. The outer caller runs the collaborator-tolerant cleanup gate
+after all nested phases finish. Existing deletion permissions and merge/CI gates
+still apply.
 
 ## Workflow
 

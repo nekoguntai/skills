@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import workflow_state as policy
 from .core import CleanupError, capture_baselines, need
-from .git_inventory import InventoryError
+from .git_inventory import InventoryError, capture, owned_resource_present
 from .state_io import locked, read, resolved, write, sync_directory
 from .target import select_remote, verify_target
 
@@ -109,7 +109,7 @@ def verify_cleanup(args):
     path = resolved(args.path)
     with locked(path):
         state = checked(path)
-        policy.verify_cleanup(state)
+        collaborator_changes = policy.verify_cleanup(state)
         checks = state['cleanup']['checks']
         if not any(c['iteration'] == state['iteration'] for c in checks):
             checks.append({'iteration': state['iteration'],
@@ -117,6 +117,9 @@ def verify_cleanup(args):
                            'repositories': [b['root'] for b in state['cleanup']['baselines']]})
             save(path, state)
     print('cleanup verified')
+    for root, changes in collaborator_changes.items():
+        for change in changes:
+            print(f'collaborator change (not owned, left in place) in {root}: {change}')
 
 
 def validate(args):
@@ -132,6 +135,37 @@ def summary(args):
     print(json.dumps(result, indent=2))
 
 
+def stale(args):
+    """List resources earlier loop runs reserved for this repository and never cleaned.
+
+    These are this user's own forgotten branches and worktrees (for example
+    after a context compaction or an interrupted run), unlike collaborator
+    changes. Each still needs pr-delivery's merge, CI, and dirty-tree checks
+    before removal; this command only reports and never deletes.
+    """
+    root = str(Path(args.repo_root).expanduser().resolve())
+    inventory = capture(root)
+    found = []
+    for path in sorted(Path(args.state_root).expanduser().rglob('*.json')):
+        if any(part.endswith('-artifacts') for part in path.parts):
+            continue
+        try:
+            state = json.loads(path.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(state, dict) or not isinstance(state.get('resources'), list):
+            continue
+        for resource in state['resources']:
+            if not isinstance(resource, dict) or resource.get('repoRoot') != root or resource.get('status') == 'cleaned':
+                continue
+            if owned_resource_present(resource, inventory):
+                found.append({'statePath': str(path), 'runId': state.get('runId'), 'workflow': state.get('workflow'),
+                              'runStatus': state.get('status'), 'kind': resource.get('kind'),
+                              'identifier': resource.get('identifier'), 'remote': resource.get('remote'),
+                              'resourceStatus': resource.get('status')})
+    print(json.dumps(found, indent=2, sort_keys=True))
+
+
 def parser(default_workflow=None):
     root = argparse.ArgumentParser(description=__doc__)
     commands = root.add_subparsers(dest='command', required=True)
@@ -143,6 +177,10 @@ def parser(default_workflow=None):
     init.add_argument('--max-passes', type=int)
     init.add_argument('--companion-repo', action='append', default=[])
     init.set_defaults(handler=initialize, workflow=default_workflow)
+    stale_command = commands.add_parser('stale')
+    stale_command.add_argument('--repo-root', required=True)
+    stale_command.add_argument('--state-root', default=str(Path.home() / '.codex' / 'state'))
+    stale_command.set_defaults(handler=stale)
     for name, handler in [('replace', replace), ('archive', archive), ('verify-cleanup', verify_cleanup),
                           ('verify-artifacts', verify_artifacts), ('validate', validate), ('summary', summary)]:
         command = commands.add_parser(name)

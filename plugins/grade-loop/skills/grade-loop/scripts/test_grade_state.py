@@ -210,15 +210,24 @@ class GradeStateCliTests(unittest.TestCase):
         self.assertEqual(self.state()["iteration"], 2)
         self.assertEqual(self.state()["status"], "deferred")
 
-    def test_local_branch_leak_and_stale_cleanup_receipt_block_terminal_exit(self):
+    def test_owned_branch_leak_after_receipt_blocks_terminal_exit_but_collaborators_do_not(self):
         self.archive_audit()
         self.cli("verify-cleanup", "--path", self.state_path)
+        # After the receipt: a collaborator's branch appears, and a branch this
+        # run reserved is recorded cleaned but left behind.
+        self.git(self.repo, "branch", "collaborator-branch")
+        self.reserve_resource("local-branch", "leaked-after-receipt")
         self.git(self.repo, "branch", "leaked-after-receipt")
+        self.mark_resources_cleaned()
         self.replace(
             lambda state: state.update(status="complete", stage="complete"),
             ok=False,
-            expected="inventory differs from baseline",
+            expected="owned resources remain: local-branch leaked-after-receipt",
         )
+        self.git(self.repo, "branch", "-D", "leaked-after-receipt")
+        self.cli("verify-cleanup", "--path", self.state_path)
+        self.replace(lambda state: state.update(status="complete", stage="complete"))
+        self.assertEqual(self.state()["status"], "complete")
 
     def test_remote_branch_leak_blocks_cleanup(self):
         remote = self.root / "remote.git"
@@ -236,7 +245,7 @@ class GradeStateCliTests(unittest.TestCase):
         self.mark_resources_cleaned()
         self.archive_audit()
         self.cli("verify-cleanup", "--path", self.state_path, ok=False)
-        self.assertIn("remote origin", self.cli("verify-cleanup", "--path", self.state_path, ok=False).stderr)
+        self.assertIn("remote-branch codex/remote-leak", self.cli("verify-cleanup", "--path", self.state_path, ok=False).stderr)
 
     def test_baseline_and_resource_ownership_are_immutable(self):
         baseline = copy.deepcopy(self.state()["cleanup"]["baselines"])

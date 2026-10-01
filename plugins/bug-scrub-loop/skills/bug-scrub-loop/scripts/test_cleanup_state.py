@@ -147,9 +147,19 @@ class CleanupStateCliTests(unittest.TestCase):
         self.replace_with(state)
         self.cli("verify-cleanup", "--path", self.state_path)
 
-        # The receipt is valid when written. A later-created branch must still
-        # block completion even though the state carries that receipt.
+        # The receipt is valid when written. A branch this run reserved, recorded
+        # cleaned, but left behind must still block completion despite that
+        # receipt; a collaborator's unreserved branch does not.
+        self.git(self.repo, "branch", "collaborator-branch")
+        state = self.read_state()
+        state["resources"].append({"repoRoot": str(self.repo), "kind": "local-branch",
+            "identifier": "late-leak", "owner": "cleanup-test", "status": "active",
+            "iteration": 1, "remote": None})
+        self.replace_with(state)
         self.git(self.repo, "branch", "late-leak")
+        state = self.read_state()
+        state["resources"][-1]["status"] = "cleaned"
+        self.replace_with(state)
         complete = self.read_state()
         complete["status"] = "complete"
         complete["stage"] = "complete"
@@ -178,7 +188,7 @@ class CleanupStateCliTests(unittest.TestCase):
         }]
         result = self.replace_with(complete, ok=False)
         self.assertNotEqual(0, result.returncode)
-        self.assertIn("Git inventory differs from baseline", result.stderr)
+        self.assertIn("owned resources remain: local-branch late-leak", result.stderr)
         self.assertEqual("active", self.read_state()["status"])
         self.git(self.repo, "branch", "-d", "late-leak")
         self.replace_with(complete)
@@ -193,7 +203,7 @@ class CleanupStateCliTests(unittest.TestCase):
         result = self.replace_with(state, ok=False)
         self.assertIn("cannot claim a baseline resource", result.stderr)
 
-    def test_live_gate_rejects_new_local_remote_and_worktree_even_with_receipt(self):
+    def test_live_gate_reports_unreserved_and_rejects_owned_local_remote_and_worktree(self):
         cases = ("local", "remote", "worktree")
         for case in cases:
             with self.subTest(resource=case):
@@ -217,10 +227,25 @@ class CleanupStateCliTests(unittest.TestCase):
                 state["cleanup"]["checks"].append({"iteration": 0, "verifiedAt": "stale",
                     "repositories": [str(self.repo)]})
                 self.state_path.write_text(json.dumps(state))
+                # Unreserved, the new resource is a collaborator's: reported only.
+                reported = self.cli("verify-cleanup", "--path", self.state_path)
+                self.assertIn("collaborator change", reported.stdout)
+                # Recorded as this run's (claimed cleaned), it must block the gate.
+                state = self.read_state()
+                kind, identifier, remote = {
+                    "local": ("local-branch", "loop-added", None),
+                    "remote": ("remote-branch", "main", "origin"),
+                    "worktree": ("worktree", str((self.root / "extra-worktree").resolve()), None),
+                }[case]
+                state["resources"].append({"repoRoot": str(self.repo), "kind": kind, "identifier": identifier,
+                    "owner": "cleanup-test", "status": "cleaned", "iteration": 1, "remote": remote})
+                state["iteration"] = 1
+                self.state_path.write_text(json.dumps(state))
                 checks_before = state["cleanup"]["checks"]
                 revision_before = state["revision"]
                 result = self.cli("verify-cleanup", "--path", self.state_path, ok=False)
                 self.assertNotEqual(0, result.returncode)
+                self.assertIn("owned resources remain", result.stderr)
                 after = self.read_state()
                 self.assertEqual(checks_before, after["cleanup"]["checks"])
                 self.assertEqual(revision_before, after["revision"])

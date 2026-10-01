@@ -57,8 +57,10 @@ worker, review, audit, delivery, and companion resources. Archive the inspected
 report/evidence, plan revisions, screenshots, and other evidence before
 removing their worktree; verify archive bytes and the latest source copy before
 cleanup. The helper records ownership but does not delete resources. Restore
-the original checkout assignment and require exact baseline equality before
-advancing, finishing, or deferring. Reuse the archived frontend inspection
+the original checkout assignment and pass the collaborator-tolerant cleanup gate
+(owned resources gone; other collaborators' branches and worktrees reported,
+never cleaned) before advancing, finishing, or deferring; before finishing, also
+settle our own forgotten resources listed by `loop_state.py stale`. Reuse the archived frontend inspection
 when the target SHA is unchanged; refresh it when the target advances.
 
 Apply the same live target-SHA and inventory gate after an initially clean
@@ -140,8 +142,8 @@ In autonomous loop mode, run these phases without pausing for permission:
 9. Reconcile the target SHA, then reuse the archived inspection if it is still
    for that exact SHA; otherwise run a fresh bounded inspection on the refreshed
    target. Archive and register the post-closeout evidence, settle its workers
-   and any owned resources, then verify exact baseline restoration before a
-   clean exit, deferral, or pass advance. If a major actionable item remains
+   and any owned resources, then pass the collaborator-tolerant cleanup gate
+   before a clean exit, deferral, or pass advance. If a major actionable item remains
    and the budget allows it, advance durable state and start a fresh pass from
    new owned resources.
 
@@ -317,8 +319,8 @@ still for this exact SHA, reuse it; do not repeat the same inspection.
 Otherwise run a fresh bounded frontend inspection from the synced target
 branch. Archive and register its report/evidence and audit record before cleanup. Use an owned
 worktree only when the inspection or report mutates repository files. Settle
-workers and owned resources, then verify exact baseline restoration before any
-pass advance, clean exit, or deferral.
+workers and owned resources, then pass the collaborator-tolerant cleanup gate
+before any pass advance, clean exit, or deferral.
 
 Use the same selection standard as autonomous mode:
 

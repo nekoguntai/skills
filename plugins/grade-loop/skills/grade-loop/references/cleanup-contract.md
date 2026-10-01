@@ -57,8 +57,12 @@ or worktree from the refreshed target branch.
 ## Verification and exits
 
 At each iteration boundary and before every terminal exit, run
-`run_state.py verify-cleanup --path <state-path>` and require whole-inventory
-equality with the immutable starting baseline. Then run
+`run_state.py verify-cleanup --path <state-path>`. It requires every owned
+resource to be gone and the primary checkout restored; branches and worktrees
+other collaborators added or removed are printed as `collaborator change` lines
+for the report and are never cleaned or treated as failures. Before a terminal
+exit, also run `loop_state.py stale --repo-root <root>` (pr-delivery) and settle
+our own forgotten resources from earlier runs. Then run
 `run_state.py validate --path <state-path>` and capture
 `run_state.py summary --path <state-path>` for the final record. A successful
 cleanup requires both state validation and inventory verification to pass.

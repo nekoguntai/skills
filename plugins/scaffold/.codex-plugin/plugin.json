@@ -1,6 +1,6 @@
 {
   "name": "scaffold",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Portable CI scaffolding with 100% coverage and protected PR-only merges.",
   "author": {
     "name": "skills-maintainers"

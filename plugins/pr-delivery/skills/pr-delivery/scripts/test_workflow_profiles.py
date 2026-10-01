@@ -96,6 +96,14 @@ class WorkflowProfileTests(unittest.TestCase):
         self.replace(path, lambda state: state["audits"].append(audit))
         return audit
 
+    def add_resource(self, path, kind, identifier):
+        """Reserve a resource, then record it cleaned (as a run would after removing it)."""
+        record = {"repoRoot": str(self.repo.resolve()), "kind": kind, "identifier": identifier,
+                  "owner": self.state(path)["runId"], "iteration": self.state(path)["iteration"],
+                  "remote": None, "status": "active"}
+        self.replace(path, lambda state: state["resources"].append(record))
+        self.replace(path, lambda state: state["resources"][-1].update(status="cleaned"))
+
     def make_settled(self, path, outcome="clean", report_kind="plan", history=True):
         audit = self.add_audit(path, outcome, report_kind, history)
         self.cli(path, "verify-cleanup")
@@ -253,7 +261,7 @@ class WorkflowProfileTests(unittest.TestCase):
         self.assertIn("pass budget exceeded", result.stderr)
         self.assertEqual(1, self.state(finite)["iteration"])
 
-    def test_non_grade_cleanup_rejects_target_drift_and_stale_inventory_receipt(self):
+    def test_non_grade_cleanup_rejects_target_drift_and_owned_leftovers(self):
         path = self.init("release")
         state = self.state(path)
         self.git(self.repo, "commit", "--allow-empty", "-m", "target moved")
@@ -263,11 +271,16 @@ class WorkflowProfileTests(unittest.TestCase):
         self.git(self.repo, "reset", "--hard", self.sha)
         self.add_audit(path)
         self.cli(path, "verify-cleanup")
+        # A branch nobody reserved is a collaborator's: reported, never failed or cleaned.
         self.git(self.repo, "branch", "late-resource")
-        with self.assertRaisesRegex(InventoryError, "Git inventory differs from baseline"):
+        report = workflow_state.verify_cleanup(self.state(path))
+        self.assertTrue(any("late-resource" in change for change in report[str(self.repo.resolve())]))
+        # A branch this run reserved and left behind fails the gate.
+        self.add_resource(path, "local-branch", "late-resource")
+        with self.assertRaisesRegex(InventoryError, "owned resources remain: local-branch late-resource"):
             workflow_state.verify_cleanup(self.state(path))
 
-    def test_companion_repository_inventory_must_return_to_its_baseline(self):
+    def test_companion_repository_owned_resources_must_be_gone(self):
         companion = self.root / "companion"
         companion.mkdir()
         self.git(companion, "init", "-b", "main")
@@ -282,11 +295,37 @@ class WorkflowProfileTests(unittest.TestCase):
                       "--target-branch", "main", "--current-sha", self.sha,
                       "--workflow", "implement-merge", "--companion-repo", str(companion)])
         state = self.state(path)
+        companion_root = str(companion.resolve())
         self.git(companion, "branch", "temporary-leak")
-        with self.assertRaisesRegex(InventoryError, "Git inventory differs from baseline"):
+        # Unreserved: reported for the companion repository, not failed.
+        self.assertTrue(any("temporary-leak" in change for change in workflow_state.verify_inventories(state)[companion_root]))
+        # Reserved by this run in the companion: must be gone.
+        state["resources"].append({"repoRoot": companion_root, "kind": "local-branch", "identifier": "temporary-leak",
+                                   "owner": "companion-test", "iteration": 1, "remote": None, "status": "active"})
+        with self.assertRaisesRegex(InventoryError, "owned resources remain"):
             workflow_state.verify_inventories(state)
         self.git(companion, "branch", "-D", "temporary-leak")
-        workflow_state.verify_inventories(state)
+        self.assertEqual([], workflow_state.verify_inventories(state)[companion_root])
+
+    def test_stale_lists_forgotten_owned_resources_from_any_run(self):
+        """Resources an earlier run reserved and never cleaned are surfaced for this repository."""
+        state_root = self.root / "state-root"
+        forgotten = state_root / "implement-merge" / "repo" / "old-run.json"
+        forgotten.parent.mkdir(parents=True)
+        self.git(self.repo, "branch", "forgotten-branch")
+        repo_root = str(self.repo.resolve())
+        forgotten.write_text(json.dumps({"runId": "old-run", "workflow": "implement-merge", "status": "blocked", "resources": [
+            {"repoRoot": repo_root, "kind": "local-branch", "identifier": "forgotten-branch", "remote": None, "status": "active"},
+            {"repoRoot": repo_root, "kind": "local-branch", "identifier": "already-gone", "remote": None, "status": "active"},
+            {"repoRoot": repo_root, "kind": "local-branch", "identifier": "main", "remote": None, "status": "cleaned"},
+            {"repoRoot": "/elsewhere", "kind": "local-branch", "identifier": "forgotten-branch", "remote": None, "status": "active"}
+        ]}), encoding="utf-8")
+        (state_root / "implement-merge" / "repo" / "old-run-artifacts").mkdir()
+        (state_root / "implement-merge" / "repo" / "old-run-artifacts" / "copy.json").write_text("{}", encoding="utf-8")
+        (state_root / "not-json.json").write_text("{", encoding="utf-8")
+        result = self.command([sys.executable, str(LOOP_STATE), "stale", "--repo-root", str(self.repo), "--state-root", str(state_root)])
+        listed = json.loads(result.stdout)
+        self.assertEqual([("old-run", "forgotten-branch", "blocked")], [(item["runId"], item["identifier"], item["runStatus"]) for item in listed])
 
     def test_archive_and_state_paths_must_stay_outside_worktrees(self):
         worktree = self.root / "linked-worktree"

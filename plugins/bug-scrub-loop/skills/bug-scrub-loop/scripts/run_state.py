@@ -1009,7 +1009,7 @@ def command_verify_cleanup(arguments: argparse.Namespace) -> None:
     with state_lock(path):
         state = validate_state(read_json(path))
         require(state["schemaVersion"] == 2, "legacy state has no trustworthy cleanup baseline")
-        verify_live(state)
+        collaborator_changes = verify_live(state)
         checks = state["cleanup"]["checks"]
         if not any(check["iteration"] == state["iteration"] for check in checks):
             checks.append({
@@ -1022,6 +1022,9 @@ def command_verify_cleanup(arguments: argparse.Namespace) -> None:
             validate_state(state)
             atomic_write(path, state)
     print(f"cleanup verified: {path}")
+    for root, changes in collaborator_changes.items():
+        for change in changes:
+            print(f"collaborator change (not owned, left in place) in {root}: {change}")
 
 
 def command_summary(arguments: argparse.Namespace) -> None:

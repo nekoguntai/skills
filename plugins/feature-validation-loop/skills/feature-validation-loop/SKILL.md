@@ -154,8 +154,11 @@ the immutable initial baseline. Do not convert or carry a branch/worktree to a
 later pass. At each pass boundary and every terminal exit—including an
 initially clean result or exhausted budget—archive and verify required evidence,
 settle workers, remove only safely removable owned resources, and run the
-shared live inventory check against the original baseline. Equal counts do not
-prove equality; branch names and worktree assignments must match exactly.
+shared collaborator-tolerant cleanup gate: every owned resource verifiably gone
+(ledger flags alone are not proof) and the primary checkout restored. Other
+collaborators' branches and worktrees are reported, never cleaned or treated as
+failures. Before finishing, settle our own forgotten resources listed by
+`loop_state.py stale`.
 
 The inventory check covers Git resources, not the desired ledger or generated
 reports. Keep the canonical CSV and requested HTML/Prismatic artifacts as user
@@ -236,6 +239,6 @@ python3 <skill-dir>/scripts/prismatic_artifact.py \
   artifacts after the final ledger update.
 - A standalone run is complete only when the selected pass meets its full
   ledger, execution, defect disposition, regression, and requested local-output
-  criteria and owned Git resources match the original baseline. Leave remaining
+  criteria and every owned Git resource is gone. Leave remaining
   findings deferred with a reason at budget end; blocked cleanup stays
   resumable and is not successful completion.

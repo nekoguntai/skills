@@ -286,19 +286,52 @@ def _inventory_differences(baseline: dict[str, Any], current: dict[str, Any]) ->
     return changes
 
 
-def verify(baseline: dict[str, Any]) -> dict[str, Any]:
-    """Verify current inventory exactly matches baseline, ignoring commit movement."""
+def owned_resource_present(resource: dict[str, Any], current: dict[str, Any]) -> bool:
+    """Whether an owned resource record still exists in a live inventory."""
+    name = resource.get("identifier")
+    kind = resource.get("kind")
+    if kind == "local-branch":
+        return name in current["local_branches"]
+    if kind == "worktree":
+        return any(item["path"] == str(Path(str(name)).resolve()) for item in current["worktrees"])
+    if kind == "remote-branch":
+        return any(item["remote"] == resource.get("remote") and name in item["branches"]
+                   for item in current["remote_branches"])
+    raise InventoryError(f"unknown owned resource kind: {kind}")
+
+
+def _primary_assignment(inventory: dict[str, Any]) -> dict[str, Any] | None:
+    return next((item for item in inventory["worktrees"] if item["path"] == inventory["root"]), None)
+
+
+def verify(baseline: dict[str, Any], owned: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Verify a loop left no owned resource behind, tolerating collaborators.
+
+    Several agents and people share a repository, so branches and worktrees
+    that this loop does not own may appear or disappear while it runs. The
+    gate fails only for what this loop is responsible for: an owned resource
+    that still exists, a changed repository identity, or a primary checkout
+    left on a different branch. Every other difference from the starting
+    inventory is returned as ``collaborator_changes`` for the report and is
+    never cleaned by this loop.
+    """
     validate_inventory(baseline)
-    for item in baseline["worktrees"]:
-        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
-            raise InventoryError("malformed worktree baseline")
-        if not Path(item["path"]).is_dir():
-            raise InventoryError(f"baseline worktree directory is missing: {item['path']}")
+    if not Path(baseline["root"]).is_dir():
+        raise InventoryError(f"baseline repository root is missing: {baseline['root']}")
     current = capture(baseline["root"])
-    if current != baseline:
-        differences = _inventory_differences(baseline, current)
-        raise InventoryError("Git inventory differs from baseline: " + "; ".join(differences))
-    return {"ok": True, "inventory": current}
+    failures = []
+    if baseline["root"] != current["root"]:
+        failures.append(f"root changed: {baseline['root']} -> {current['root']}")
+    if baseline["common_git_dir"] != current["common_git_dir"]:
+        failures.append("common Git directory changed")
+    if _primary_assignment(baseline) != _primary_assignment(current):
+        failures.append(f"primary checkout assignment changed at {baseline['root']}")
+    leftovers = sorted(f"{item['kind']} {item['identifier']}" for item in owned or [] if owned_resource_present(item, current))
+    if leftovers:
+        failures.append("owned resources remain: " + ", ".join(leftovers))
+    if failures:
+        raise InventoryError("Git inventory cleanup failed: " + "; ".join(failures))
+    return {"ok": True, "inventory": current, "collaborator_changes": _inventory_differences(baseline, current)}
 
 
 def _read_baseline(path: str) -> dict[str, Any]:
@@ -319,10 +352,15 @@ def main(argv: list[str] | None = None) -> int:
     capture_parser.add_argument("--repo-root", required=True)
     verify_parser = commands.add_parser("verify")
     verify_parser.add_argument("--baseline", required=True)
+    verify_parser.add_argument("--owned", help="JSON file listing this loop's resources (kind, identifier, remote)")
     args = parser.parse_args(argv)
     try:
-        result = capture(args.repo_root) if args.command == "capture" else verify(_read_baseline(args.baseline))
-    except InventoryError as exc:
+        if args.command == "capture":
+            result = capture(args.repo_root)
+        else:
+            owned = json.loads(Path(args.owned).read_text(encoding="utf-8")) if args.owned else None
+            result = verify(_read_baseline(args.baseline), owned)
+    except (InventoryError, OSError, ValueError) as exc:
         print(json.dumps({"ok": False, "error": str(exc)}), file=sys.stderr)
         return 1
     print(json.dumps(result, sort_keys=True, indent=2))

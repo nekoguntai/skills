@@ -1,6 +1,6 @@
 {
   "name": "visual-consistency-loop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup.",
   "author": {
     "name": "nekoguntai",

@@ -28,8 +28,11 @@ If nested, inherit the caller's operational ledger and `state_helper`; do not
 create another baseline or complete its goal. When standalone work creates Git
 resources, use `pr-delivery/scripts/loop_state.py init --workflow recursive-plan-review`
 and `references/loop-run-state.md` before creation: capture the starting
-inventory, reserve owned resources, archive evidence, and verify live restoration
-at each delivery-group boundary and final/deferral exit. Use no arbitrary pass
+inventory, reserve owned resources, archive evidence, and pass the
+collaborator-tolerant cleanup gate (owned resources gone, primary checkout
+restored; other collaborators' branches and worktrees reported, never cleaned)
+at each delivery-group boundary and final/deferral exit, settling our own
+forgotten resources listed by `loop_state.py stale` before finishing. Use no arbitrary pass
 cap unless the user sets one. Do not carry converted resources into another
 pass. Preserve unfinished work with a cleanup blocker rather than deleting it
 or claiming completion. If no Git resources are created, preserve requested

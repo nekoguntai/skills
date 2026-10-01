@@ -140,7 +140,7 @@ ledger or inventing extra state fields.
   dirty, unmerged, or unrecognized worktrees in place and report them.
 - Pass the run ID, iteration, state path, state helper, and iteration-baseline cleanup policy
   to `pr-delivery` during Phase 5. Its nested cleanup must satisfy its own gates;
-  the outer loop still verifies full inventory equality.
+  the outer loop still runs the collaborator-tolerant cleanup gate.
 - Conversion between passes is prohibited. Every pass's owned resources must
   be safely removed before another iteration begins.
 

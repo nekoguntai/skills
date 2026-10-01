@@ -49,8 +49,9 @@ def require_settled(state):
 
 
 def verify_live(state):
+    """Require settled delivery and no owned leftovers; return collaborator changes."""
     require_settled(state)
-    core.verify_inventories(state)
+    return core.verify_inventories(state)
 
 
 def validate_cleanup_transition(current, candidate):

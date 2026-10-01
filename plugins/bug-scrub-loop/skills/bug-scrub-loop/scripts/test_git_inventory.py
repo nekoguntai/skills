@@ -72,12 +72,19 @@ class GitInventoryTests(unittest.TestCase):
             inventory["worktrees"],
         )
 
-    def test_detects_leaked_local_and_remote_branches(self) -> None:
+    def test_reports_unowned_branches_and_fails_on_owned_leftovers(self) -> None:
         baseline = self.capture()
         command("git", "branch", "leaked-local", cwd=self.repo)
         command("git", "push", "origin", "main:refs/heads/leaked-remote", cwd=self.repo)
-        with self.assertRaises(git_inventory.InventoryError):
-            git_inventory.verify(baseline)
+        # Branches this loop never reserved belong to collaborators: reported, not failed.
+        changes = git_inventory.verify(baseline)["collaborator_changes"]
+        self.assertTrue(any("leaked-local" in change for change in changes))
+        self.assertTrue(any("leaked-remote" in change for change in changes))
+        owned = [{"kind": "local-branch", "identifier": "leaked-local", "remote": None},
+                 {"kind": "remote-branch", "identifier": "leaked-remote", "remote": "origin"}]
+        with self.assertRaisesRegex(git_inventory.InventoryError,
+                                    "owned resources remain: local-branch leaked-local, remote-branch leaked-remote"):
+            git_inventory.verify(baseline, owned)
 
     def test_repository_without_remotes_is_supported(self) -> None:
         command("git", "remote", "remove", "origin", cwd=self.repo)
@@ -102,11 +109,19 @@ class GitInventoryTests(unittest.TestCase):
         with self.assertRaises(git_inventory.InventoryError):
             git_inventory.validate_inventory(duplicate_worktree)
 
-    def test_detects_replaced_branch_even_when_branch_count_is_unchanged(self) -> None:
+    def test_reports_replaced_branch_even_when_branch_count_is_unchanged(self) -> None:
         command("git", "branch", "before", cwd=self.repo)
         baseline = self.capture()
         command("git", "branch", "-m", "before", "after", cwd=self.repo)
-        with self.assertRaisesRegex(git_inventory.InventoryError, "local branches added"):
+        changes = git_inventory.verify(baseline)["collaborator_changes"]
+        self.assertIn("local branches added=['after'] removed=['before']", changes)
+        with self.assertRaisesRegex(git_inventory.InventoryError, "owned resources remain: local-branch after"):
+            git_inventory.verify(baseline, [{"kind": "local-branch", "identifier": "after", "remote": None}])
+
+    def test_fails_when_primary_checkout_is_left_on_another_branch(self) -> None:
+        baseline = self.capture()
+        command("git", "switch", "-c", "elsewhere", cwd=self.repo)
+        with self.assertRaisesRegex(git_inventory.InventoryError, "primary checkout assignment changed"):
             git_inventory.verify(baseline)
 
     def test_ignores_head_advancement(self) -> None:
@@ -125,17 +140,20 @@ class GitInventoryTests(unittest.TestCase):
         self.assertNotIn("secret", str(caught.exception))
         self.assertNotIn(secret_endpoint, str(caught.exception))
 
-    def test_detects_missing_worktree_directory_and_preserves_dirty_worktree(self) -> None:
+    def test_owned_worktree_must_be_gone_and_removed_collaborator_worktree_is_reported(self) -> None:
         tree = self.base / "linked"
         command("git", "worktree", "add", "-b", "linked", str(tree), "main", cwd=self.repo)
         baseline = self.capture()
         (tree / "untracked.txt").write_text("keep me", encoding="utf-8")
         self.assertTrue(git_inventory.verify(baseline)["ok"])
         self.assertTrue((tree / "untracked.txt").exists())
+        owned = [{"kind": "worktree", "identifier": str(tree), "remote": None}]
+        with self.assertRaisesRegex(git_inventory.InventoryError, "owned resources remain: worktree"):
+            git_inventory.verify(baseline, owned)
         (tree / "untracked.txt").unlink()
         shutil.rmtree(tree)
-        with self.assertRaises(git_inventory.InventoryError):
-            git_inventory.verify(baseline)
+        # A collaborator's worktree that disappeared is reported, not failed.
+        self.assertTrue(git_inventory.verify(baseline)["collaborator_changes"])
 
     def test_repeated_verification_is_idempotent_and_cli_round_trips(self) -> None:
         baseline = self.capture()

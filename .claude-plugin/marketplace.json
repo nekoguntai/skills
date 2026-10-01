@@ -29,7 +29,7 @@
     {
       "name": "feature-validation-loop",
       "source": "./plugins/feature-validation-loop",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "End-to-end product behavior validation loop that discovers code-derived features, maintains a canonical CSV ledger, generates test scenarios, documents defects, fixes verified issues, retests, and publishes Prismatic Thread artifacts."
     },
     {
@@ -41,55 +41,55 @@
     {
       "name": "pr-delivery",
       "source": "./plugins/pr-delivery",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "description": "End-to-end pull request delivery workflow for commit, push, PR creation, CI/review monitoring, safe merge, target-branch post-merge CI verification, and cleanup."
     },
     {
       "name": "recursive-plan-review",
       "source": "./plugins/recursive-plan-review",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Iterative plan-file critique and refinement that applies evidence-backed improvements until no actionable comments remain."
     },
     {
       "name": "release",
       "source": "./plugins/release",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Repository-native release execution and release-infrastructure remediation through gates, tags, artifacts, and publication checks."
     },
     {
       "name": "frontend-pr-loop",
       "source": "./plugins/frontend-pr-loop",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "description": "Autonomous frontend/UI improvement loop that clears stale context, chooses a bounded change, verifies it, delivers it through a merged PR, verifies target-branch post-merge CI, rebuilds running app containers, and rechecks."
     },
     {
       "name": "grade-loop",
       "source": "./plugins/grade-loop",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "End-to-end quality remediation loop that clears stale context, grades a repo, reviews a remediation plan, implements a bounded fix, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns grade."
     },
     {
       "name": "rationalize-loop",
       "source": "./plugins/rationalize-loop",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "End-to-end convergence remediation loop that clears stale context, rationalizes divergent paths, reviews a convergence plan, implements a bounded phase, delivers the PR, verifies target-branch post-merge CI, rebuilds running app containers, and reruns rationalize."
     },
     {
       "name": "implement-merge",
       "source": "./plugins/implement-merge",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "Plan-to-merge execution loop with nested caller-owned goals and explicit rebuild policies."
     },
     {
       "name": "bug-scrub-loop",
       "source": "./plugins/bug-scrub-loop",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "description": "Resumable scrub-plan-fix-merge loop for eliminating confirmed P0-P2 defects."
     },
     {
       "name": "scaffold",
       "source": "./plugins/scaffold",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "Portable CI scaffolding for GitHub and Forgejo repositories, with 100% coverage, quality/security gates, and protected PR-only merges."
     },
     {
@@ -101,7 +101,7 @@
     {
       "name": "visual-consistency-loop",
       "source": "./plugins/visual-consistency-loop",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "Audit, fix, deliver, and re-audit visual and navigation consistency until no P0–P2 findings remain, with verified cleanup."
     }
   ]

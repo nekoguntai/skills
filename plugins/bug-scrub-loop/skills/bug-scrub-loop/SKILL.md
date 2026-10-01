@@ -120,9 +120,10 @@ schema rules remain here. Missing/incompatible providers block mutation.
 Read `references/cleanup-contract.md` before initialization and at every
 iteration boundary. Capture immutable pre-run inventories for the application
 and all companion repositories. Pass the shared ownership ledger and
-`cleanup_policy: iteration-baseline` through nested delivery. Require actual
-local/remote/worktree set equality before advancing; ledger status alone is
-insufficient. Schema 1 state remains inspection-only until reviewed migration
+`cleanup_policy: iteration-baseline` through nested delivery. Before advancing,
+require every owned local/remote branch and worktree to be verifiably gone and
+the primary checkout restored; ledger status alone is insufficient. Other
+collaborators' branches and worktrees are reported, never cleaned or failed. Schema 1 state remains inspection-only until reviewed migration
 from trustworthy historical evidence; never invent its missing baseline.
 
 ## Durable Run State
@@ -453,7 +454,11 @@ Before completing the goal:
 6. Record remaining P3 findings and evidence gaps without presenting them as
    blocking defects.
 7. After deployment and all other closeout work, rerun `verify-cleanup` and
-   record starting/final counts and exact inventory equality. Set run status and
+   record that every owned resource is gone, the primary checkout is restored,
+   and any collaborator changes it reported (other agents' branches and
+   worktrees are left in place, never cleaned). Also run pr-delivery's
+   `loop_state.py stale --repo-root <root>` and settle our own forgotten
+   resources from earlier runs with the same merge, CI, and clean-tree checks. Set run status and
    stage to `complete` through `replace` (which repeats live verification), and only
    then complete the host goal.
 

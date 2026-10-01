@@ -1,6 +1,6 @@
 {
   "name": "bug-scrub-loop",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Resumable scrub-plan-fix-merge loop for eliminating confirmed P0-P2 defects.",
   "author": {
     "name": "nekoguntai",

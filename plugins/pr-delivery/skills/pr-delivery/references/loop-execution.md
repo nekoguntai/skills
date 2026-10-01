@@ -85,9 +85,9 @@ its helper and return evidence for their exact resources. Do not initialize a
 nested run that treats the parent's temporary resources as permanent baseline,
 complete the parent's goal, or delete resources still in use by other phases.
 After a nested delivery group, remove its safe owned resources and return
-verified absence to the coordinator. Whole-run equality is checked by the outer
-owner after all resources for its pass are settled; a nested group must not
-claim that the parent is clean while other parent resources remain.
+verified absence to the coordinator. The outer owner runs the cleanup gate after
+all resources for its pass are settled; a nested group must not claim that the
+parent is clean while other parent resources remain.
 
 ## Artifacts, boundaries, and exits
 
@@ -106,13 +106,46 @@ and delete owned branches. Remote deletion uses an explicit expected-SHA lease.
 Repository-specific exact one-off permissions still apply. Never infer ownership
 from a branch prefix, use broad cleanup, or force-remove dirty/unique work.
 
-Before advancing a pass, finishing, or declaring a budget/scope deferral, verify
-live inventory equals the original baseline in every participating repository.
-Check live target SHA before consuming an audit and at completion. Preserve
-archives and assert zero remaining owned resources. Equal counts alone are
-insufficient; original branch names and worktree assignments must survive.
-Reusing a current archived audit at an unchanged target avoids redundant full
-inspection, but never reuses stale code, build, browser, or test evidence.
+## Collaborator-tolerant cleanup gate
+
+Repositories are shared: other agents and people create and remove branches and
+worktrees while a loop runs. The goal is to remove what this loop worked on once
+it has merged, plus our own forgotten leftovers, never to freeze the repository
+to its starting inventory.
+
+Before advancing a pass, finishing, or declaring a budget/scope deferral, run
+`verify-cleanup` (bug-scrub: its own `verify-cleanup`). In every participating
+repository it requires:
+
+- every resource this run reserved (local branch, remote branch, worktree) to be
+  verifiably absent, whatever status the ledger claims;
+- the primary checkout back on its original assignment and an unchanged
+  repository identity;
+- a fresh target SHA, current audit evidence, settled deliveries, and intact
+  archives.
+
+Branches and worktrees this run never reserved are collaborator changes. The
+gate reports them (`collaborator change (not owned, left in place)`) and never
+fails on them; do not clean, rename, or rebase them, and do not treat a
+collaborator's unmerged or old branch as stale. Check live target SHA before
+consuming an audit and at completion. Reusing a current archived audit at an
+unchanged target avoids redundant full inspection, but never reuses stale code,
+build, browser, or test evidence.
+
+### Sweep our own forgotten resources
+
+Also before finishing, run `loop_state.py stale --repo-root <root>` (default
+state root `~/.codex/state`). It lists resources that any earlier loop run
+reserved for this repository and never recorded cleaned and that still exist,
+for example after a context compaction or an interrupted run. Those are ours.
+For each, apply this skill's delivery checks (merge commit verified on the
+target, required target CI green, clean tree, unchanged tip, expected-SHA lease
+for remote deletion), then remove it and record it cleaned through that run's
+helper while the run is resumable; for a terminal run, list the removal in this
+run's report. Preserve and report anything dirty, unmerged, or still in use by an
+active run. Apply repository custody ledgers the same way (close entries whose
+task merged). Only resources recorded as ours, in loop state or a repository
+ledger, are swept.
 
 Apply the same cleanup gate to an initially clean/no-op pass, a final audit,
 budget exhaustion, and explicitly stopped work. No converted worktrees or

@@ -90,8 +90,10 @@ PR's head branch. A nested stage must return resource-level cleanup evidence;
    python3 <skill-dir>/scripts/run_state.py verify-cleanup --path <state.json>
    ```
 
-   This requires settled plans/PRs, verified merges/CI, cleaned resources, and
-   live inventory equality. It records a cleanup check atomically. Run it once
+   This requires settled plans/PRs, verified merges/CI, every owned resource
+   verifiably gone, and the primary checkout on its original assignment.
+   Branches and worktrees this run never reserved belong to collaborators; it
+   prints them as `collaborator change` lines and never fails or cleans them. It records a cleanup check atomically. Run it once
    at iteration 0 before advancing to iteration 1, too.
 7. Reload state before constructing the next candidate (the revision may have
    advanced). `replace` performs a fresh live check on every iteration increment,
@@ -109,14 +111,18 @@ cleanup first and report incomplete discovery separately from cleanup status.
 
 ## Unexpected changes and final report
 
-Inventory mismatch is evidence to investigate, never deletion authorization.
-Preserve unregistered additions and missing baseline-resource evidence. If
-concurrent work changes the baseline inventory, report that conflict without
-resetting the baseline, deleting another owner's resources, or claiming exact
-restoration. Git and remote reads are observational rather than a global lock;
-the exact restoration guarantee assumes no concurrent resource mutations.
+An unexpected inventory change is evidence to investigate, never deletion
+authorization. Branches and worktrees this run never reserved belong to
+collaborators working concurrently: the gate reports them, and they do not block
+cleanup or completion. Never delete, rename, or reset another owner's resources,
+and never re-baseline. Only an owned resource that still exists, a changed
+repository identity, or a primary checkout left on another branch fails the
+gate. Our own forgotten resources from earlier runs come from pr-delivery's
+`loop_state.py stale` listing and are settled with the usual merge, CI, and
+clean-tree checks.
 
 Report starting/final counts separately for local branches, each remote endpoint,
-and worktrees, together with exact set equality and zero remaining owned
-resources. A blocked/interrupted run may retain recoverable work; it must never
+and worktrees, zero remaining owned resources, and the collaborator changes the
+gate reported (branches and worktrees other agents added or removed, left in
+place). A blocked/interrupted run may retain recoverable work; it must never
 report successful cleanup or clean-loop completion.

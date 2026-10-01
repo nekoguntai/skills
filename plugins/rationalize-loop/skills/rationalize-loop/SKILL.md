@@ -65,10 +65,12 @@ companion resources. Archive every plan revision and any report, history,
 screen capture, or other evidence needed after its worktree is removed. Verify
 archive bytes and the latest source copy before cleanup. The helper does not
 delete resources; follow the shared cleanup contract and let the coordinator
-restore the original branch and worktree assignments and verify exact baseline
-equality.
+remove owned resources, restore the primary checkout, and pass the
+collaborator-tolerant cleanup gate (other collaborators' branches and worktrees
+are reported, never cleaned), then settle our own forgotten resources listed by
+`loop_state.py stale`.
 
-Run the live target-SHA and whole-inventory gates before consuming a rationalize
+Run the live target-SHA and cleanup gates before consuming a rationalize
 result, advancing a pass, and any clean, deferred, or no-actionable exit. A
 no-actionable initial result and pass-budget deferral require the same cleanup
 gate as a merged pass. Preserve an unchanged-target archived rationalization
@@ -196,7 +198,7 @@ actionable convergence items:
 
 If no major actionable converge/remove item exists, record the result, preserve
 the requested canonical plan, and complete the same live target-SHA and
-whole-inventory cleanup gate required by a delivered pass. Then stop without
+collaborator-tolerant cleanup gate required by a delivered pass. Then stop without
 manufacturing a PR.
 
 If the next step requires a product, compatibility, data-retention, or external
@@ -427,5 +429,6 @@ Report concisely:
   skipped;
 - post-closeout rationalize-loop result and whether another pass was skipped,
   deferred, or completed;
-- pass budget used and whether each pass restored the original inventory;
+- pass budget used, whether each pass removed its owned resources, and any
+  collaborator changes the cleanup gate reported;
 - deferred/watch/keep-separate findings and decisions still needing user input.

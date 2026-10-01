@@ -148,11 +148,13 @@ inspection, final audit, requested stop, or budget exhaustion:
   work; remove only safe owned worktrees/branches. Remote deletion uses an
   expected-SHA lease. Honor repository one-off destructive-action permissions;
   loop authorization does not bypass them. No broad prune or forced cleanup.
-- Run `verify-cleanup` and require actual local/remote branch and worktree
-  inventory equality to the immutable baseline in every participating repo,
-  plus zero owned leftovers. Counts or ledger flags alone are insufficient.
-  A nested stage returns exact-resource absence to the outer owner, which
-  performs whole-pass equality after all sibling resources are settled.
+- Run `verify-cleanup`: in every participating repo, every owned local/remote
+  branch and worktree must be verifiably gone (ledger flags alone are
+  insufficient) and the primary checkout restored. Branches and worktrees other
+  collaborators added or removed are reported, never cleaned or failed. Before
+  finishing, settle our own forgotten resources listed by `loop_state.py stale`.
+  A nested stage returns exact-resource absence to the outer owner, which runs
+  the gate after all sibling resources are settled.
 - Re-read state after helper updates. A fresh clean audit plus all gates permits
   `complete/complete`; remaining issues at a user limit or deliberate deferral
   require `deferred/complete` and a reason. If evidence, delivery, runtime, or

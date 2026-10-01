@@ -209,11 +209,12 @@ def verify_artifacts(state):
 
 
 def verify_cleanup(state):
+    """Gate a pass boundary; return collaborator changes per repository for the report."""
     verify_target(state)
     settled(state)
     latest_audit(state)
     verify_artifacts(state)
-    verify_inventories(state)
+    return verify_inventories(state)
 
 
 def transition(current, candidate):

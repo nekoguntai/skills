@@ -101,8 +101,8 @@ the caller's temporary resources as permanent. Do not convert resources between
 phases or claim nested completion while any of the nested resources remain.
 Preserve unique plan/progress history durably first, and recheck current branch
 tips before deleting; remote deletion must use an explicit expected-SHA lease.
-The outer caller verifies whole-inventory equality after all pass resources are
-settled. Existing deletion permissions and merge/CI gates still apply.
+The outer caller runs the collaborator-tolerant cleanup gate after all pass
+resources are settled. Existing deletion permissions and merge/CI gates still apply.
 
 ## Branch And Worktree Ownership
 
@@ -119,11 +119,19 @@ than adding a second cleanup ledger or inventing state fields.
   resource in the shared ledger before creation or first push. Never claim a
   resource present in the original baseline.
 - After delivery and exact target CI, remove only safe resources owned by this
-  pass, then verify the full original inventory. Dirty, unmerged, or unrecognized
-  resources must be preserved and reported; no converted branch/worktree or
-  leftover counts as successful cleanup. For nested runs, return scoped absence
-  evidence to the caller instead of invoking its whole-run gate; the outer
-  owner verifies full-inventory equality after all caller resources settle.
+  pass, then run the collaborator-tolerant cleanup gate (pr-delivery
+  `references/loop-execution.md`): owned resources verifiably gone and the
+  primary checkout restored. Branches and worktrees other collaborators added or
+  removed are reported, never cleaned or treated as failures. Dirty, unmerged,
+  or unrecognized resources must be preserved and reported; no converted
+  branch/worktree or owned leftover counts as successful cleanup.
+- Before finishing, run `loop_state.py stale --repo-root <root>` and settle our
+  own forgotten resources from earlier runs (for example after a context
+  compaction) with the same merge, CI, and clean-tree checks, plus any merged
+  entries in a repository custody ledger.
+- For nested runs, return scoped absence evidence to the caller instead of
+  invoking its whole-run gate; the outer owner runs the gate after all caller
+  resources settle.
 
 ## Implementation Loop
 
@@ -158,7 +166,8 @@ the outer caller performs whole-run audit and inventory gates.
    ancestry and exact target-branch CI, and clean up delivery resources.
 8. Record a `post` audit at the verified target SHA after delivery. Archive and
    verify required artifacts before cleaning generated sources.
-9. Verify exact baseline restoration before advancing or terminating. Run the
+9. Pass the cleanup gate (owned resources gone, primary checkout restored,
+   collaborator changes reported) before advancing or terminating. Run the
    between-pass context reset before starting another delivery group.
 
 ### Worker roles
@@ -231,7 +240,8 @@ before deployment unless the caller already authorized that override.
 
 Complete a standalone run only after all plan acceptance criteria are met,
 required deployment/target-CI checks are verified, configured rebuild work is
-done, and owned resources are cleaned back to the original inventory. An
+done, owned resources are cleaned and the stale sweep has settled our own
+forgotten resources, regardless of collaborators' concurrent work. An
 initially clean plan or exhausted pass budget still goes through the same
 cleanup gate; record `deferred` with a reason when acceptance remains
 incomplete. A deferred plan is not a completed goal.
